@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-
-
 import itertools
 import pkgutil
 import time
