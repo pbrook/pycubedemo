@@ -1,6 +1,3 @@
-import itertools
-import pkgutil
-import time
 import numbers
 from OpenGL.GL import *
 from OpenGL.GL import shaders

@@ -5,6 +5,7 @@ import itertools
 import pkgutil
 import time
 import glcube
+import serialcube
 
 def load_patterns(cube):
     patterns = []
