@@ -1,3 +1,7 @@
+# OpenGL LED cube renderer
+# Copyright (C) Paul Brook <paul@nowt.org>
+# Released under the terms of the GNU General Public License version 3
+
 import numbers
 from OpenGL.GL import *
 from OpenGL.GL import shaders
@@ -6,8 +10,6 @@ from OpenGL.arrays import vbo
 import pygame
 import pygame.locals as pgl
 import numpy
-
-CUBE_SIZE = 8
 
 vertex_code = """
 attribute vec3 position;
@@ -65,6 +67,20 @@ def m0_projection(aspect, n, f):
                         [0.0, 0.0, 1.0, 0.0]], 'f')
 
 class Cube(object):
+    def __init__(self, args):
+        width = 640
+        height = 480
+        size = args.size
+        self.size = size
+        self.pixels = numpy.zeros((size, size, size, 3), 'f')
+        pygame.init()
+        video_flags = pgl.OPENGL | pgl.DOUBLEBUF
+        pygame.display.set_mode((width, height), video_flags)
+        self.shader_init()
+        self.geometry_init()
+        self.projection = m0_projection(width/float(height), 1.0, 100.0)
+        glEnable(GL_DEPTH_TEST)
+
     def shader_init(self):
         vertex = shaders.compileShader(vertex_code, GL_VERTEX_SHADER)
         fragment = shaders.compileShader(fragment_code, GL_FRAGMENT_SHADER)
@@ -77,23 +93,13 @@ class Cube(object):
     def geometry_init(self):
         self.pixel_model = Model("pixel.off")
 
-    def init(self):
-        width = 640
-        height = 480
-        self.size = CUBE_SIZE
-        self.pixels = numpy.zeros((CUBE_SIZE, CUBE_SIZE, CUBE_SIZE, 3), 'f')
-        pygame.init()
-        video_flags = pgl.OPENGL | pgl.DOUBLEBUF
-        pygame.display.set_mode((width, height), video_flags)
-        self.shader_init()
-        self.geometry_init()
-        self.projection = m0_projection(width/float(height), 1.0, 100.0)
-        glEnable(GL_DEPTH_TEST)
-
     def set_pixel(self, xyz, rgb):
         if isinstance(rgb[0], numbers.Integral):
             rgb = [(c + 0.5) / 256.0 for c in rgb]
         self.pixels[tuple(xyz)] = rgb
+
+    def clear(self):
+        self.pixels.fill(0.0)
 
     def render(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -106,9 +112,9 @@ class Cube(object):
                             [0.0, 0.0, 0.0, 1.0]
                            ], 'f')
         def all_pixels():
-            for x in range(0, CUBE_SIZE):
-                for y in range(0, CUBE_SIZE):
-                    for z in range(0, CUBE_SIZE):
+            for x in range(0, self.size):
+                for y in range(0, self.size):
+                    for z in range(0, self.size):
                         yield (x, y, z)
         spacing = 5.0
         xoff = -3.5 * spacing

@@ -1,4 +1,6 @@
-# Swipe a plane of pixels accross the cube
+# Swipe a plane across the cube in all 3 dimensions
+# Copyright (C) Paul Brook <paul@nowt.org>
+# Released under the terms of the GNU General Public License version 3
 
 class Pattern(object):
     def __init__(self, cube):

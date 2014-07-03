@@ -1,6 +1,10 @@
 #! /usr/bin/env python
 
+# Framework for running LED cube demos
+# Copyright (C) Paul Brook <paul@nowt.org>
+# Released under the terms of the GNU General Public License version 3
 
+import argparse
 import itertools
 import pkgutil
 import time
@@ -43,11 +47,24 @@ def run_pattern(cube, pattern):
             next_tick += interval
         except StopIteration:
             return False
+        except KeyboardInterrupt:
+            return True
+
+ap = argparse.ArgumentParser(description="LED cube demo program")
+ap.add_argument('-P', '--port', type=str,
+        help="Serial port")
+ap.add_argument('-s', '--size', type=int, default=8,
+        help="Cube size")
+args = ap.parse_args()
 
 max_pattern_duration = 10
-c = glcube.Cube()
-c.init()
+if args.port is None:
+    c = glcube.Cube(args)
+else:
+    c = serialcube.Cube(args)
 patterns = load_patterns(c)
 while True:
     if run_pattern(c, next(patterns)):
         break;
+c.clear()
+c.render()
