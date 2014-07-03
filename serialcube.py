@@ -61,7 +61,7 @@ class Cube(object):
         (board, offset) = self.mapfn(xyz)
         if board != self.current_board:
             self.select_board(board)
-        self.do_cmd(offset, rgb[0], rgb[1], rgb[2])
+        self.do_cmd(offset, r, g, b)
 
     def render(self):
         self.bus_reset()

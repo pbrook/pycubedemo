@@ -3,10 +3,6 @@
 # Released under the terms of the GNU General Public License version 3
 
 class Pattern(object):
-    def __init__(self, cube):
-        self.cube = cube
-        self.name = "swipe"
-
     def init(self):
         self.phase = 0
         self.offset = -self.cube.size
