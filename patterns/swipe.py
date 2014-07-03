@@ -25,7 +25,7 @@ class Pattern(object):
             pos[p0] = i
             for j in range(0, self.cube.size):
                 pos[p1] = j
-                for k in range(0, 8):
+                for k in range(0, self.cube.size):
                     pos[p2] = k
                     self.cube.set_pixel(pos, color)
         self.offset += 1
