@@ -2,7 +2,6 @@
 # Copyright (C) Paul Brook <paul@nowt.org>
 # Released under the terms of the GNU General Public License version 3
 
-import numbers
 from OpenGL.GL import *
 from OpenGL.GL import shaders
 from OpenGL.GLU import *
@@ -10,6 +9,7 @@ from OpenGL.arrays import vbo
 import pygame
 import pygame.locals as pgl
 import numpy
+import cubehelper
 
 vertex_code = """
 attribute vec3 position;
@@ -94,8 +94,7 @@ class Cube(object):
         self.pixel_model = Model("pixel.off")
 
     def set_pixel(self, xyz, rgb):
-        if isinstance(rgb[0], numbers.Integral):
-            rgb = [(c + 0.5) / 256.0 for c in rgb]
+        rgb = cubehelper.color_to_float(rgb)
         self.pixels[tuple(xyz)] = rgb
 
     def clear(self):

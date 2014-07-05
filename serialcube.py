@@ -3,8 +3,8 @@
 # Released under the terms of the GNU General Public License version 3
 
 import serial
-import numbers
 import numpy
+import cubehelper
 
 def minicube_map(xyz):
     return (0, xyz[0] + xyz[1] * 4 + xyz[2] * 16)
@@ -53,11 +53,7 @@ class Cube(object):
             self.do_cmd(i, 0, 0, 0)
 
     def set_pixel(self, xyz, rgb):
-        (r, g, b) = rgb
-        if not isinstance(r, numbers.Integral):
-            r = int(r * 256.0 - 0.5)
-            g = int(g * 256.0 - 0.5)
-            b = int(b * 256.0 - 0.5)
+        (r, g, b) = cubehelper.color_to_int(rgb)
         (board, offset) = self.mapfn(xyz)
         if board != self.current_board:
             self.select_board(board)

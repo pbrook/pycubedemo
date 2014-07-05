@@ -4,6 +4,7 @@
 
 import random
 import math
+import cubehelper
 
 class Drop(object):
     def __init__(self, cube, x, y):
@@ -14,14 +15,14 @@ class Drop(object):
     def reset(self):
         self.z = self.cube.size
         self.speed = random.uniform(1.0, 0.25)
+        self.color = cubehelper.random_color()
     def tick(self):
-        color = (1.0, 1.0, 1.0)
         self.z -= self.speed
         z0 = int(math.floor(self.z))
         if z0 < self.cube.size - 1:
             self.cube.set_pixel((self.x , self.y, z0 + 1), (0,0,0))
         if z0 >= 0:
-            self.cube.set_pixel((self.x , self.y, z0), color)
+            self.cube.set_pixel((self.x , self.y, z0), self.color)
 
 class Pattern(object):
     def init(self):
