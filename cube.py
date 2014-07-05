@@ -43,7 +43,10 @@ def run_pattern(cube, pattern):
     interval = pattern.init()
     now = time.time()
     next_tick = now + interval
-    expires = now + args.interval
+    if args.interval > 0:
+        expires = now + args.interval
+    else:
+        expires = None
     print("Running pattern %s" % pattern.name)
     cube.clear()
     while True:
@@ -52,7 +55,7 @@ def run_pattern(cube, pattern):
             if cube.render():
                 return True
             now = time.time()
-            if now > expires:
+            if expires is not None and now > expires:
                 raise StopIteration
             if next_tick > now:
                 time.sleep(next_tick - now)
