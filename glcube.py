@@ -105,26 +105,28 @@ class Cube(object):
         glUseProgram(self.shader)
         glEnableVertexAttribArray(self.attr_position)
 
-        mpos = numpy.array([[1.0, 0.0, 0.0, 0.0],
-                            [0.0, 0.0, 1.0, 0.0],
-                            [0.0, 1.0, 0.0, 0.0],
-                            [0.0, 0.0, 0.0, 1.0]
-                           ], 'f')
+        mpos = numpy.identity(4, 'f')
         def all_pixels():
             for x in range(0, self.size):
                 for y in range(0, self.size):
                     for z in range(0, self.size):
                         yield (x, y, z)
         spacing = 5.0
-        xoff = -3.5 * spacing
-        yoff = -3.5 * spacing
-        zoff = 6.0 * spacing
+        xoff = (self.size / 2 - 0.5) * -spacing
+        yoff = (self.size / 2 - 0.5) * -spacing
+        zoff = (self.size / 2 + 1) * spacing
+        eye = numpy.array([[1.0, 0.0, 0.0, xoff],
+                            [0.0, 0.0, 1.0, yoff],
+                            [0.0, 1.0, 0.0, zoff],
+                            [0.0, 0.0, 0.0, 1.0]
+                           ], 'f')
+        eye = numpy.dot(self.projection, eye)
         for pos in all_pixels():
             (x, y, z) = pos
-            mpos[0, 3] = x * spacing + xoff
-            mpos[1, 3] = y * spacing + yoff
-            mpos[2, 3] = z * spacing + zoff
-            m = numpy.dot(self.projection, mpos)
+            mpos[0, 3] = x * spacing
+            mpos[1, 3] = y * spacing
+            mpos[2, 3] = z * spacing
+            m = numpy.dot(eye, mpos)
 
             glUniformMatrix4fv(self.param_proj, 1, GL_TRUE, m)
             glUniform3fv(self.param_color, 1, self.pixels[pos])
