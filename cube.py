@@ -14,7 +14,6 @@ import serialcube
 def load_patterns(cube, match):
     patterns = {}
     for (finder, name, ispkg) in pkgutil.walk_packages(["patterns"]):
-        print name
         if match is not None and name not in match:
             continue
         print("Loading pattern module '%s'" % name)
