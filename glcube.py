@@ -68,6 +68,7 @@ def m0_projection(aspect, n, f):
 
 class Cube(object):
     def __init__(self, args):
+        self.color = True
         width = 640
         height = 480
         size = args.size

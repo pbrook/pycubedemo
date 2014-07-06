@@ -25,8 +25,10 @@ class Cube(object):
         self.display_page = 0
         if self.size == 4:
             self.mapfn = minicube_map
+            self.color = False
         elif self.size == 8:
             self.mapfn = maxicube_map
+            self.color = True
         else:
             raise Exception("Bad cube size: %d" % args.size)
 

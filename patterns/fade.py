@@ -11,7 +11,7 @@ class Pattern(object):
         self.color = cubehelper.random_color()
         return 1.0/16
     def tick(self):
-        color = cubehelper.scale_color(self.color, self.level)
+        color = cubehelper.mix_color((0.0,0.0,0.0), self.color, self.level)
         for x in range(0, self.cube.size):
             for y in range(0, self.cube.size):
                 for z in range(0, self.cube.size):

@@ -11,9 +11,10 @@ def random_color():
         b = random.randrange(2)
     return (float(r), float(g), float(b))
 
-def scale_color(color, level):
-    (r, g, b) = color
-    return (r * level, g * level, b * level)
+def mix_color(color0, color1, level):
+    f0 = color_to_float(color0)
+    f1 = color_to_float(color1)
+    return tuple([f1[n] * level + f0[n] * (1.0 - level) for n in range(0, 3)])
 
 def color_to_int(color):
     if isinstance(color, numbers.Integral):
