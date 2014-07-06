@@ -100,6 +100,13 @@ class Cube(object):
     def clear(self):
         self.pixels.fill(0.0)
 
+    def single_buffer(self):
+        pass
+
+    def swap(self):
+        # We are effectively double buffered, so no need to do anything here
+        pass
+
     def render(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glUseProgram(self.shader)

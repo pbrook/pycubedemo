@@ -21,6 +21,8 @@ class Cube(object):
         self.ser = serial.Serial(args.port, 115200)
         self.current_board = None
         self.size = args.size
+        self.write_page = 0
+        self.display_page = 0
         if self.size == 4:
             self.mapfn = minicube_map
         elif self.size == 8:
@@ -38,19 +40,32 @@ class Cube(object):
         self.do_cmd(0xe0, 0xf0, 0xf1, 0xf2)
         self.current_board = None
 
-    def select_board(self, board):
+    def select_board(self, board = 0xff):
         self.bus_reset()
         self.do_cmd(0xe1, board, 0, 0)
         self.current_board = board
 
     def set_brightness(self, rgb):
-        self.select_board(0xff)
+        self.select_board()
         self.do_cmd(0xc0, rgb[0], rgb[1], rgb[2])
 
     def clear(self):
-        self.select_board(0xff)
+        self.select_board()
         for i in range(0, 128):
             self.do_cmd(i, 0, 0, 0)
+
+    def _flip(self):
+        self.select_board()
+        self.do_cmd(0x80, 0, self.display_page, self.write_page)
+
+    def single_buffer(self):
+        self.write_page = self.display_page
+        self._flip()
+
+    def swap(self):
+        self.display_page = self.write_page
+        self.write_page = 1 - self.write_page
+        self._flip()
 
     def set_pixel(self, xyz, rgb):
         (r, g, b) = cubehelper.color_to_int(rgb)

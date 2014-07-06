@@ -39,6 +39,10 @@ def load_patterns(cube, match):
 # Returns true to quit
 def run_pattern(cube, pattern):
     interval = pattern.init()
+    try:
+        db = pattern.double_buffer
+    except:
+        db = False
     now = time.time()
     next_tick = now + interval
     if args.interval > 0:
@@ -46,12 +50,19 @@ def run_pattern(cube, pattern):
     else:
         expires = None
     print("Running pattern %s" % pattern.name)
-    cube.clear()
+    if db:
+        cube.clear()
+        cube.swap()
+    else:
+        cube.single_buffer()
+        cube.clear()
     while True:
         try:
             pattern.tick()
             if cube.render():
                 return True
+            if db:
+                cube.swap()
             now = time.time()
             if expires is not None and now > expires:
                 raise StopIteration
