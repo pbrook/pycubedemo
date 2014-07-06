@@ -16,6 +16,8 @@ def scale_color(color, level):
     return (r * level, g * level, b * level)
 
 def color_to_int(color):
+    if isinstance(color, numbers.Integral):
+        return (color >> 16, (color >> 8) & 0xff, color & 0xff)
     (r, g, b) = color
     if not isinstance(r, numbers.Integral):
         r = int(r * 256.0 - 0.5)
@@ -24,7 +26,12 @@ def color_to_int(color):
     return (r, g, b)
 
 def color_to_float(color):
-    (r, g, b) = color
+    if isinstance(color, numbers.Integral):
+        r = color >> 16
+        g = (color >> 8) & 0xff
+        b = color & 0xff
+    else:
+        (r, g, b) = color
     if isinstance(r, numbers.Integral):
         r = (r + 0.5) / 256.0
         g = (g + 0.5) / 256.0
