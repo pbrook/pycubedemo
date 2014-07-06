@@ -8,8 +8,6 @@ import argparse
 import itertools
 import pkgutil
 import time
-import glcube
-import serialcube
 
 def load_patterns(cube, match):
     patterns = {}
@@ -77,8 +75,10 @@ ap.add_argument('-i', '--interval', type=float, default=10.0,
 args = ap.parse_args()
 
 if args.port is None:
+    import glcube
     c = glcube.Cube(args)
 else:
+    import serialcube
     c = serialcube.Cube(args)
 if args.pattern is None:
     plist = None
