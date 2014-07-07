@@ -13,7 +13,7 @@ def maxicube_map(xyz):
     (x, y, z) = xyz
     pos = 0
     board = y/4
-    pos = x + (y % 4) * 8 + z * 16
+    pos = (x ^ 8) + (y % 4) * 8 + z * 16
     return (0, xyz[0] + xyz[1] * 4 + xyz[2] * 16)
 
 class Cube(object):
