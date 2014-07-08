@@ -91,6 +91,14 @@ if args.port is None:
 else:
     import serialcube
     c = serialcube.Cube(args)
+
+try:
+    #c.set_brightness((8, 4, 4))
+    #c.set_brightness((0xc0, 0xff, 0xff))
+    c.set_brightness((0x30, 0x45, 0x40))
+except:
+    pass
+
 if args.pattern is None:
     plist = None
 else:
