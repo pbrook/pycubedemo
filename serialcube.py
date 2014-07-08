@@ -71,9 +71,6 @@ class Cube(object):
 
     def set_pixel(self, xyz, rgb):
         (r, g, b) = cubehelper.color_to_int(rgb)
-        # Hack because Martyn can't solder straight
-        if xyz[0] == 3 and xyz[1] == 6:
-            (r, g, b) = (g, b, r)
         (board, offset) = self.mapfn(xyz)
         if board != self.current_board:
             self.select_board(board)
