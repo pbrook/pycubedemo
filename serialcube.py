@@ -12,9 +12,9 @@ def minicube_map(xyz):
 def maxicube_map(xyz):
     (x, y, z) = xyz
     pos = 0
-    board = y/4
-    pos = (x ^ 8) + (y % 4) * 8 + z * 16
-    return (0, xyz[0] + xyz[1] * 4 + xyz[2] * 16)
+    board = y/2
+    pos = x + ((y ^ 1) % 2) * 8 + (z ^ 1) * 16
+    return (board, pos)
 
 class Cube(object):
     def __init__(self, args):
@@ -71,6 +71,9 @@ class Cube(object):
 
     def set_pixel(self, xyz, rgb):
         (r, g, b) = cubehelper.color_to_int(rgb)
+        # Hack because Martyn can't solder straight
+        if xyz[0] == 3 and xyz[1] == 6:
+            (r, g, b) = (g, b, r)
         (board, offset) = self.mapfn(xyz)
         if board != self.current_board:
             self.select_board(board)
