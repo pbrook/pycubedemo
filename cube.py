@@ -101,3 +101,4 @@ while True:
         break;
 c.clear()
 c.render()
+c.swap()
