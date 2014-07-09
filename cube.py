@@ -81,7 +81,7 @@ ap.add_argument('-s', '--size', type=int, default=8,
         help="Cube size")
 ap.add_argument('-p', '--pattern', type=str, action='append',
         help="Patterns to run")
-ap.add_argument('-i', '--interval', type=float, default=10.0,
+ap.add_argument('-i', '--interval', type=float,
         help="Maximum interval between patterns")
 args = ap.parse_args()
 
@@ -92,10 +92,17 @@ else:
     import serialcube
     c = serialcube.Cube(args)
 
+if args.interval is None:
+    if args.pattern is not None and len(args.pattern) == 1:
+        args.interval = 0.0
+    else:
+        args.interval = 10.0
+
 try:
     #c.set_brightness((8, 4, 4))
     #c.set_brightness((0xc0, 0xff, 0xff))
     c.set_brightness((0x30, 0x45, 0x40))
+    #c.set_brightness((0x10, 0x08, 0x08))
 except:
     pass
 
