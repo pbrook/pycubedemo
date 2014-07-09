@@ -3,14 +3,27 @@
 # Released under the terms of the GNU General Public License version 3
 
 import random
+import cubehelper
+import math
 
 IQ = 10
 
 INITIAL_ENERGY = 1.0
-ENERGY_DECAY = 0.1
 
-def color_for_energy(e):
-    return (e, e, e)
+def color_from_val(val):
+    if val < 85:
+        r = val * 3;
+        g = 255 - r;
+        b = 0;
+    elif val < 170:
+        b = (val - 85) * 3;
+        r = 255 - b;
+        g = 0;
+    else:
+        g = (val - 170) * 3;
+        b = 255 - g;
+        r = 0;
+    return (r, g, b)
 
 class Pattern(object):
     def init(self):
@@ -22,7 +35,18 @@ class Pattern(object):
         self.current_pos = (i, i, i)
         self.forward = 1
         self.blocked = True
+        if self.cube.size < 8:
+            self.decay = 0.1
+        else:
+            self.decay = 0.01
         return 0.1
+
+    def color_for_energy(self, e):
+        if self.cube.color:
+            color = color_from_val(int(math.modf(e * 5.0)[0] * 256))
+        else:
+            color = (1.0, 1.0, 1.0)
+        return cubehelper.mix_color(0, color, e)
 
     def is_empty(self, pos):
         if min(pos) < 0 or max(pos) >= self.cube.size:
@@ -39,12 +63,15 @@ class Pattern(object):
         return tuple(newpos)
 
     def age(self):
-        for i in range(0, len(self.energy)):
-            e = self.energy[i] - ENERGY_DECAY
+        num = len(self.energy)
+        for i in range(0, num):
+            e = self.energy[i] - self.decay
             pos = self.body[i]
             self.energy[i] = e
-            if e > 0:
-                color = color_for_energy(e)
+            if i == num - 1:
+                color = (1.0, 1.0, 1.0)
+            elif e > 0:
+                color = self.color_for_energy(e)
             else:
                 color = (0, 0, 0)
             self.cube.set_pixel(pos, color)
