@@ -18,7 +18,7 @@ def walker(cube):
 
 class Pattern(object):
     def init(self):
-        self.message = 'Hello World'
+        self.message = 'Leeds Hackspace'
         self.position = 0
         self.double_buffer = True
         self.pos = [pos for pos in walker(self.cube)]
