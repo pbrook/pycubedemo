@@ -12,7 +12,7 @@ def minicube_map(xyz):
 def maxicube_map(xyz):
     (x, y, z) = xyz
     pos = 0
-    board = y/2
+    board = y//2
     pos = x + ((y ^ 1) % 2) * 8 + (z ^ 1) * 16
     return (board, pos)
 

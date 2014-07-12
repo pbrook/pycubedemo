@@ -20,7 +20,7 @@ def load_patterns(cube, match):
             mod = loader.load_module(name)
             constructor = mod.Pattern
         except Exception as e:
-            print e
+            print(e)
             print("Failed to load pattern '%s'" % name)
             constructor = None
         if constructor is not None:
