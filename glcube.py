@@ -14,9 +14,10 @@ import cubehelper
 vertex_code = """
 attribute vec3 position;
 uniform mat4 proj;
+uniform vec3 offset;
 void main()
 {
-    gl_Position = proj * vec4(position, 1.0);
+    gl_Position = proj * vec4(position + offset, 1.0);
 }
 """
 
@@ -54,10 +55,12 @@ class Model(object):
         self.ind_vbo = vbo.VBO(data, target=GL_ELEMENT_ARRAY_BUFFER)
         self.ind_count = nfaces * 3
 
-    def render(self, attr):
+    def bind(self, attr):
         self.vec_vbo.bind()
         self.ind_vbo.bind()
         glVertexAttribPointer(attr, 3, GL_FLOAT, GL_FALSE, 12, self.vec_vbo)
+
+    def render(self):
         glDrawElements(GL_TRIANGLES, self.ind_count, GL_UNSIGNED_SHORT, self.ind_vbo)
 
 def m0_projection(aspect, n, f):
@@ -90,6 +93,7 @@ class Cube(object):
         self.attr_position = glGetAttribLocation(program, "position")
         self.param_color = glGetUniformLocation(program, "color")
         self.param_proj = glGetUniformLocation(program, "proj")
+        self.param_offset = glGetUniformLocation(program, "offset")
 
     def geometry_init(self):
         self.pixel_model = Model("pixel.off")
@@ -112,13 +116,8 @@ class Cube(object):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glUseProgram(self.shader)
         glEnableVertexAttribArray(self.attr_position)
+        self.pixel_model.bind(self.attr_position)
 
-        mpos = numpy.identity(4, 'f')
-        def all_pixels():
-            for x in range(0, self.size):
-                for y in range(0, self.size):
-                    for z in range(0, self.size):
-                        yield (x, y, z)
         spacing = 5.0
         xoff = (self.size / 2 - 0.5) * -spacing
         yoff = (self.size / 2 - 0.5) * -spacing
@@ -129,16 +128,13 @@ class Cube(object):
                             [0.0, 0.0, 0.0, 1.0]
                            ], 'f')
         eye = numpy.dot(self.projection, eye)
-        for pos in all_pixels():
-            (x, y, z) = pos
-            mpos[0, 3] = x * spacing
-            mpos[1, 3] = y * spacing
-            mpos[2, 3] = z * spacing
-            m = numpy.dot(eye, mpos)
-
-            glUniformMatrix4fv(self.param_proj, 1, GL_TRUE, m)
-            glUniform3fv(self.param_color, 1, self.pixels[pos])
-            self.pixel_model.render(self.attr_position)
+        glUniformMatrix4fv(self.param_proj, 1, GL_TRUE, eye)
+        for x in range(0, self.size):
+            for y in range(0, self.size):
+                for z in range(0, self.size):
+                    glUniform3fv(self.param_color, 1, self.pixels[x, y, z])
+                    glUniform3fv(self.param_offset, 1, (x * spacing, y * spacing, z * spacing))
+                    self.pixel_model.render()
         pygame.display.flip()
         for event in pygame.event.get():
             if event.type == pgl.QUIT:
