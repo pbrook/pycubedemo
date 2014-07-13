@@ -5,6 +5,18 @@
 import serial
 import numpy
 import cubehelper
+import socket
+
+class TCPWriter(object):
+    def __init__(self, addr):
+        (host, port) = addr.split(':')
+        port = int(port)
+        if host == "":
+            host = "localhost"
+        self.sock = socket.create_connection((host, int(port)))
+    def write(self, b):
+        self.sock.sendall(b)
+        return 4
 
 def minicube_map(xyz):
     return (0, xyz[0] + xyz[1] * 4 + xyz[2] * 16)
@@ -18,7 +30,12 @@ def maxicube_map(xyz):
 
 class Cube(object):
     def __init__(self, args):
-        self.ser = serial.Serial(args.port, 115200)
+        if args.port[0] == '@':
+            self.ser = open(args.port[1:], "wb")
+        elif ':' in args.port:
+            self.ser = TCPWriter(args.port)
+        else:
+            self.ser = serial.Serial(args.port, 115200)
         self.current_board = None
         self.size = args.size
         self.write_page = 0
@@ -33,9 +50,7 @@ class Cube(object):
             raise Exception("Bad cube size: %d" % args.size)
 
     def do_cmd(self, cmd, d0, d1, d2):
-        n = self.ser.write(bytearray((cmd, d0, d1, d2)))
-        if n != 4:
-            raise Exception("only wrote %d" % n)
+        self.ser.write(bytearray((cmd, d0, d1, d2)))
 
     def bus_reset(self):
         self.do_cmd(0xff, 0xff, 0xff, 0xff)
