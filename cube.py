@@ -114,6 +114,6 @@ patterns = load_patterns(c, plist)
 while True:
     if run_pattern(c, next(patterns)):
         break;
+c.single_buffer()
 c.clear()
 c.render()
-c.swap()
