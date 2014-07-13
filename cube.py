@@ -45,6 +45,8 @@ def run_pattern(cube, pattern):
         db = False
     now = time.time()
     next_tick = now + interval
+    sec_tick = now + 1.0
+    frames = 0
     if args.interval > 0:
         expires = now + args.interval
     else:
@@ -69,6 +71,12 @@ def run_pattern(cube, pattern):
             if next_tick > now:
                 time.sleep(next_tick - now)
             next_tick += interval
+            frames += 1
+            if now >= sec_tick:
+                if debug_frames:
+                    print("%d/%d" % (frames, int(1.0/interval)))
+                sec_tick += 1.0
+                frames = 0
         except StopIteration:
             return False
         except KeyboardInterrupt:
@@ -83,8 +91,11 @@ ap.add_argument('-p', '--pattern', type=str, action='append',
         help="Patterns to run")
 ap.add_argument('-i', '--interval', type=float,
         help="Maximum interval between patterns")
+ap.add_argument('-f', '--frames', action='store_true', default=False,
+        help="Display framerate")
 args = ap.parse_args()
 
+debug_frames = args.frames
 if args.port is None:
     import glcube
     c = glcube.Cube(args)
