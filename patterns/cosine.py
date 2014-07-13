@@ -17,8 +17,8 @@ class Pattern(object):
 # sine needs 0 to be midpoint... ah. but there's no midpoint
         for x in range(1, self.cube.size):
             y = int(math.cos(x+self.counter) * self.cube.size/2);
-            y += self.cube.size/2
+            y += self.cube.size//2
             z = int(math.cos(x+self.counter-1) * self.cube.size/2);
-            z += self.cube.size/2
+            z += self.cube.size//2
             color = cubehelper.random_color()
             self.cube.set_pixel([x,z,y],color);

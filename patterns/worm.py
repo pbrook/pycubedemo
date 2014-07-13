@@ -31,7 +31,7 @@ class Pattern(object):
         self.energy = []
         self.heading = 0
         self.tries = 0
-        i = self.cube.size / 2
+        i = self.cube.size // 2
         self.current_pos = (i, i, i)
         self.forward = 1
         self.blocked = True

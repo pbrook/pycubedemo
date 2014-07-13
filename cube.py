@@ -31,7 +31,7 @@ def load_patterns(cube, match):
     if len(patterns) == 0:
         raise Exception("No patterns found")
     if match is None:
-        ordered = patterns.itervalues()
+        ordered = patterns.values()
     else:
         ordered = map(lambda x: patterns[x], match)
     return itertools.cycle(ordered)
