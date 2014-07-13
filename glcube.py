@@ -10,6 +10,7 @@ import pygame
 import pygame.locals as pgl
 import numpy
 import cubehelper
+import math
 
 vertex_code = """
 attribute vec3 position;
@@ -77,10 +78,17 @@ class Cube(object):
         pygame.init()
         video_flags = pgl.OPENGL | pgl.DOUBLEBUF
         pygame.display.set_mode((width, height), video_flags)
+        pygame.key.set_repeat(30, 30)
         self.shader_init()
         self.geometry_init()
         self.projection = m0_projection(width/float(height), 1.0, 100.0)
         glEnable(GL_DEPTH_TEST)
+        self.keyboard_speed = math.pi / 32
+        self.mouse_speed = math.pi / 400
+        self.alpha = 0
+        self.beta = 0
+        self.dragging = False
+        self.update_rotation()
 
     def shader_init(self):
         vertex = shaders.compileShader(vertex_code, GL_VERTEX_SHADER)
@@ -108,6 +116,24 @@ class Cube(object):
         # We are effectively double buffered, so no need to do anything here
         pass
 
+    def update_rotation(self):
+        self.alpha = max(-math.pi/2, min(self.alpha, math.pi/2))
+        ca = math.cos(self.alpha)
+        sa = math.sin(self.alpha)
+        cb = math.cos(self.beta)
+        sb = math.sin(self.beta)
+        rot1 = numpy.array([[1.0, 0.0, 0.0, 0.0],
+                            [0.0, ca,  sa,  0.0],
+                            [0.0, -sa, ca,  0.0],
+                            [0.0, 0.0, 0.0, 1.0]
+                           ], 'f')
+        rot2 = numpy.array([[cb,  sb,  0.0, 0.0],
+                            [-sb, cb,  0.0, 0.0],
+                            [0.0, 0.0, 1.0, 0.0],
+                            [0.0, 0.0, 0.0, 1.0]
+                           ], 'f')
+        self.rot = numpy.dot(rot1, rot2)
+
     def render(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glUseProgram(self.shader)
@@ -120,9 +146,9 @@ class Cube(object):
                     for z in range(0, self.size):
                         yield (x, y, z)
         spacing = 5.0
-        xoff = (self.size / 2 - 0.5) * -spacing
-        yoff = (self.size / 2 - 0.5) * -spacing
-        zoff = (self.size / 2 + 1) * spacing
+        xoff = 0
+        yoff = 0
+        zoff = (self.size  + 2) * spacing
         eye = numpy.array([[1.0, 0.0, 0.0, xoff],
                             [0.0, 0.0, 1.0, yoff],
                             [0.0, 1.0, 0.0, zoff],
@@ -131,11 +157,11 @@ class Cube(object):
         eye = numpy.dot(self.projection, eye)
         for pos in all_pixels():
             (x, y, z) = pos
-            mpos[0, 3] = x * spacing
-            mpos[1, 3] = y * spacing
-            mpos[2, 3] = z * spacing
-            m = numpy.dot(eye, mpos)
-
+            mpos[0, 3] = (x - self.size/2 + 0.5) * spacing
+            mpos[1, 3] = (y - self.size/2 + 0.5) * spacing
+            mpos[2, 3] = (z - self.size/2 + 0.5) * spacing
+            m = numpy.dot(self.rot, mpos)
+            m = numpy.dot(eye, m)
             glUniformMatrix4fv(self.param_proj, 1, GL_TRUE, m)
             glUniform3fv(self.param_color, 1, self.pixels[pos])
             self.pixel_model.render(self.attr_position)
@@ -148,3 +174,28 @@ class Cube(object):
                     return True
                 if event.key == pgl.K_SPACE:
                     raise StopIteration
+                if event.key == ord('r'):
+                        self.alpha = self.beta = 0
+                        self.update_rotation()
+            if event.type == pgl.MOUSEBUTTONDOWN:
+                self.dragging = True
+                pygame.mouse.get_rel()
+            if event.type == pgl.MOUSEBUTTONUP:
+                self.dragging = False
+            if event.type == pgl.MOUSEMOTION and self.dragging:
+                ms = self.mouse_speed
+                delta = pygame.mouse.get_rel()
+                self.beta -= delta[0] * ms 
+                self.alpha -= delta[1] * ms
+                self.update_rotation()
+            if event.type == pgl.KEYDOWN:
+                ks = self.keyboard_speed
+                if event.key == ord('w') or event.key == pgl.K_UP:
+                    self.alpha += ks
+                if event.key == ord('s') or event.key == pgl.K_DOWN:
+                    self.alpha -= ks
+                if event.key == ord('a') or event.key == pgl.K_LEFT:
+                    self.beta += ks
+                if event.key == ord('d') or event.key == pgl.K_RIGHT:
+                    self.beta -= ks
+                self.update_rotation()
