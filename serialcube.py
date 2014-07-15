@@ -16,7 +16,12 @@ class TCPWriter(object):
         self.sock = socket.create_connection((host, int(port)))
     def write(self, b):
         self.sock.sendall(b)
-        return 4
+
+def FileWriter(name):
+    return open(name, "wb")
+
+def SerialWriter(port):
+    return serial.Serial(port, 115200)
 
 def minicube_map(xyz):
     return (0, xyz[0] + xyz[1] * 4 + xyz[2] * 16)
@@ -30,12 +35,23 @@ def maxicube_map(xyz):
 
 class Cube(object):
     def __init__(self, args):
-        if args.port[0] == '@':
-            self.ser = open(args.port[1:], "wb")
-        elif ':' in args.port:
-            self.ser = TCPWriter(args.port)
+        writers = {'tcp':TCPWriter, 'file':FileWriter, 'serial':SerialWriter}
+        if ':' in args.port:
+            (proto, port) = args.port.split(':', 1)
         else:
-            self.ser = serial.Serial(args.port, 115200)
+            proto = ''
+        if proto not in writers:
+            port = args.port
+            if ':' in port:
+                proto = 'tcp'
+            elif port[:8] == '/dev/tty':
+                proto = 'serial'
+            elif port[0] == '@':
+                proto = 'file'
+                port = port[1:]
+            else:
+                proto = 'file'
+        self.ser = writers[proto](port)
         self.current_board = None
         self.size = args.size
         self.write_page = 0
