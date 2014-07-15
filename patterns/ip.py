@@ -12,7 +12,7 @@ import re
 class Pattern(object):
     def init(self):
         ips = subprocess.check_output(['/sbin/ip','addr'])
-        regex = re.compile('inet [0-9]+\.[0-9]+\.[0-9]+\.[0-9]')
+        regex = re.compile('inet [0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
         self.message = ''
         for ip in regex.findall(ips):
             realip = ip.replace('inet ','')
@@ -20,7 +20,7 @@ class Pattern(object):
                 self.message += ' '+realip
         self.position = 0
         self.double_buffer = True
-        return 2 / self.cube.size
+        return 0.2 / self.cube.size
     def tick(self):
         self.cube.clear()
         if self.position == 0:
