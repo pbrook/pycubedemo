@@ -8,6 +8,7 @@ import argparse
 import itertools
 import pkgutil
 import time
+import signal
 
 def load_patterns(cube, match):
     patterns = {}
@@ -82,6 +83,9 @@ def run_pattern(cube, pattern):
         except KeyboardInterrupt:
             return True
 
+def sigterm_handler(_signo, _stack_frame):
+    raise KeyboardInterrupt
+
 ap = argparse.ArgumentParser(description="LED cube demo program")
 ap.add_argument('-P', '--port', type=str,
         help="Serial port")
@@ -116,6 +120,8 @@ try:
     #c.set_brightness((0x10, 0x08, 0x08))
 except:
     pass
+
+signal.signal(signal.SIGTERM, sigterm_handler)
 
 if args.pattern is None:
     plist = None
