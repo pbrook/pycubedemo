@@ -2,7 +2,6 @@
 # Copyright (C) Paul Brook <paul@nowt.org>
 # Released under the terms of the GNU General Public License version 3
 
-import serial
 import numpy
 import cubehelper
 import socket
@@ -21,7 +20,38 @@ def FileWriter(name):
     return open(name, "wb")
 
 def SerialWriter(port):
+    import serial
     return serial.Serial(port, 115200)
+
+class SPIWriter(object):
+    def __init__(self, port):
+        import spidev
+        if port[:11] == '/dev/spidev':
+            port = port[11:]
+        bus = None
+        for sep in '.,:-':
+            if sep in port:
+                p = port.split(sep)
+                bus = int(p[0])
+                dev = int(p[1])
+                break
+        if bus is None:
+            if port == '':
+                bus = 1
+            else:
+                bus = int(port)
+            dev = 0
+        print((bus, dev))
+        spi = spidev.SpiDev(bus, dev)
+        spi.max_speed_hz = 2000000
+        spi.mode = 3
+        spi.lsbfirst = False
+        spi.cshigh = False
+        spi.bits_per_word = 8
+        self.spi = spi
+    def write(self, b):
+        self.spi.writebytes(list(b))
+
 
 def minicube_map(xyz):
     return (0, xyz[0] + xyz[1] * 4 + xyz[2] * 16)
@@ -35,7 +65,7 @@ def maxicube_map(xyz):
 
 class Cube(object):
     def __init__(self, args):
-        writers = {'tcp':TCPWriter, 'file':FileWriter, 'serial':SerialWriter}
+        writers = {'tcp':TCPWriter, 'file':FileWriter, 'serial':SerialWriter, 'spi':SPIWriter}
         if ':' in args.port:
             (proto, port) = args.port.split(':', 1)
         else:
@@ -46,6 +76,8 @@ class Cube(object):
                 proto = 'tcp'
             elif port[:8] == '/dev/tty':
                 proto = 'serial'
+            elif port[:8] == '/dev/spi':
+                proto = 'spi'
             elif port[0] == '@':
                 proto = 'file'
                 port = port[1:]
