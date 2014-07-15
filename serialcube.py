@@ -6,6 +6,8 @@ import numpy
 import cubehelper
 import socket
 
+BUFFER_SIZE = 128
+
 class TCPWriter(object):
     def __init__(self, addr):
         (host, port) = addr.split(':')
@@ -41,7 +43,6 @@ class SPIWriter(object):
             else:
                 bus = int(port)
             dev = 0
-        print((bus, dev))
         spi = spidev.SpiDev(bus, dev)
         spi.max_speed_hz = 2000000
         spi.mode = 3
@@ -50,7 +51,7 @@ class SPIWriter(object):
         spi.bits_per_word = 8
         self.spi = spi
     def write(self, b):
-        self.spi.writebytes(list(b))
+        self.spi.writebytes(b)
 
 
 def minicube_map(xyz):
@@ -96,9 +97,37 @@ class Cube(object):
             self.color = True
         else:
             raise Exception("Bad cube size: %d" % args.size)
+        self.buffer_len = 0
+        if BUFFER_SIZE > 0:
+            self.cmd_buffer = numpy.zeros(BUFFER_SIZE, numpy.uint8)
+
+    def _flush_data(self):
+        n = self.buffer_len
+        self.buffer_len = 0
+        if n == 0 or BUFFER_SIZE == 0:
+            return
+        if n == BUFFER_SIZE:
+            self.ser.write(self.cmd_buffer)
+        else:
+            self.ser.write(self.cmd_buffer[:n])
 
     def do_cmd(self, cmd, d0, d1, d2):
-        self.ser.write(bytearray((cmd, d0, d1, d2)))
+        if BUFFER_SIZE > 0:
+            pos = self.buffer_len
+            buf = self.cmd_buffer
+            buf[pos] = cmd
+            buf[pos + 1] = d0
+            buf[pos + 2] = d1
+            buf[pos + 3] = d2
+            try:
+                self.buffer_len += 4
+                if self.buffer_len == BUFFER_SIZE:
+                    self._flush_data()
+            except:
+                self.buffer_len = 0
+                raise
+        else:
+            self.ser.write(bytearray((cmd, d0, d1, d2)))
 
     def bus_reset(self):
         self.do_cmd(0xff, 0xff, 0xff, 0xff)
@@ -122,6 +151,7 @@ class Cube(object):
     def _flip(self):
         self.select_board()
         self.do_cmd(0x80, 0, self.display_page, self.write_page)
+        self._flush_data()
 
     def single_buffer(self):
         self.write_page = self.display_page
@@ -141,3 +171,4 @@ class Cube(object):
 
     def render(self):
         self.bus_reset()
+        self._flush_data()
