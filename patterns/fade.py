@@ -12,9 +12,9 @@ class Pattern(object):
         return 1.0/16
     def tick(self):
         color = cubehelper.mix_color((0.0,0.0,0.0), self.color, self.level)
-        for x in range(0, self.cube.size):
-            for y in range(0, self.cube.size):
-                for z in range(0, self.cube.size):
+        for y in range(0, self.cube.size):
+            for z in range(0, self.cube.size):
+                for x in range(0, self.cube.size):
                     self.cube.set_pixel((x, y, z), color)
         self.level += self.delta
         if self.level >= 1.0:

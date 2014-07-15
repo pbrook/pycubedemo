@@ -45,9 +45,9 @@ class Pattern(object):
         sz = self.cube.size
         scale = math.pi * 2.0 / float(sz)
         offset = 0.5
-        for x in range(0, sz):
-            for y in range(0, sz):
-                for z in range(0, sz):
+        for y in range(0, sz):
+            for z in range(0, sz):
+                for x in range(0, sz):
                     u = math.cos((x + offset) * scale)
                     v = math.cos((y + offset) * scale)
                     w = math.cos((z + offset) * scale)
