@@ -35,7 +35,10 @@ def load_patterns(cube, match):
         ordered = patterns.values()
     else:
         ordered = map(lambda x: patterns[x], match)
-    return itertools.cycle(ordered)
+    if args.noloop:
+        return iter(ordered)
+    else:
+        return itertools.cycle(ordered)
 
 # Returns true to quit
 def run_pattern(cube, pattern):
@@ -97,6 +100,8 @@ ap.add_argument('-i', '--interval', type=float,
         help="Maximum interval between patterns")
 ap.add_argument('-f', '--frames', action='store_true', default=False,
         help="Display framerate")
+ap.add_argument('-n', '--noloop', action='store_true', default=False,
+	help="Run selected pattern(s) only once, don't loop through them")
 args = ap.parse_args()
 
 debug_frames = args.frames
