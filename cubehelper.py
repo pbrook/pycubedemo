@@ -99,7 +99,7 @@ def line_to_points(from_point,to_point):
             copy[1] = x
             (x,y,z) = copy
 
-        points.append([x,y,z])
+        yeild (x,y,z)
 
         drift_xy -= delta_y
         drift_xz -= delta_z
@@ -112,4 +112,3 @@ def line_to_points(from_point,to_point):
             z = z + step_z
             drift_xz += delta_x
 
-    return points
