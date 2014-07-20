@@ -99,7 +99,7 @@ def line_to_points(from_point,to_point):
             copy[1] = x
             (x,y,z) = copy
 
-        yeild (x,y,z)
+        yield (x,y,z)
 
         drift_xy -= delta_y
         drift_xz -= delta_z
