@@ -1,6 +1,39 @@
 import random
 import numbers
 
+def line(p0, p1):
+    d = [abs(p0[i] - p1[i]) for i in range(0, 3)]
+    if d[0] > d[1]:
+        a0 = 0
+    else:
+        a0 = 1
+    a1 = 1 - a0
+    if d[2] > d[a0]:
+        a2 = a0
+        a0 = 2
+    else:
+        a2 = 2
+    if p0[a0] > p1[a0]:
+        (p0, p1) = (p1, p0)
+    dx = float(p1[a0] - p0[a0])
+    #print((a0, a1, a2), dx)
+    if dx < 1.0:
+        yield tuple(int(v) for v in p0)
+        return
+    dy = float(p1[a1] - p0[a1]) / dx
+    dz = float(p1[a2] - p0[a2]) / dx
+    #print([dx, dy, dz])
+    y = float(p0[a1]) + 0.5
+    z = float(p0[a2]) + 0.5
+    pos = [0.0]*3
+    for x in range(int(p0[a0]), int(p1[a0]) + 1):
+        pos[a0] = x
+        pos[a1] = int(y)
+        pos[a2] = int(z)
+        yield tuple(pos)
+        y += dy
+        z += dz
+
 def random_color():
     r = 0
     g = 0
