@@ -9,6 +9,8 @@ import math
 import subprocess
 import re
 
+COLORS = {' ':0x000000,'.':0xffffff,'0':0xffffff,'1':0xffffff,'2':0xff0000,'3':0x00ff00,'4':0x0000ff,'5':0xffff00,'6':0xff00ff,'7':0x00ffff,'8':0x00ffff,'9':0xff8000}
+
 class Pattern(object):
     def init(self):
         ips = subprocess.check_output(['/sbin/ip','addr'])
@@ -33,7 +35,7 @@ class Pattern(object):
                 self.data = font.font_data[n]
             else:
                 self.data = ()
-            self.color = cubehelper.random_color()
+            self.color = COLORS[c]
         x = (self.cube.size - len(self.data)) / 2
         y = self.position
         for mask in self.data:
