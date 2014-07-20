@@ -65,8 +65,7 @@ def run_pattern(cube, pattern):
     while True:
         try:
             pattern.tick()
-            if cube.render():
-                return True
+            cube.render()
             if db:
                 cube.swap()
             now = time.time()

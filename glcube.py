@@ -138,9 +138,9 @@ class Cube(object):
         pygame.display.flip()
         for event in pygame.event.get():
             if event.type == pgl.QUIT:
-                return True
+                raise KeyboardInterrupt
             if event.type == pgl.KEYUP:
                 if event.key == pgl.K_ESCAPE or event.key == ord('q'):
-                    return True
+                    raise KeyboardInterrupt
                 if event.key == pgl.K_SPACE:
                     raise StopIteration
