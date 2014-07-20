@@ -49,29 +49,29 @@ def line_to_points(from_point,to_point):
     (from_x, from_y, from_z) = from_point
     (to_x, to_y, to_z) = to_point
     
-    if (math.fabs(to_y - from_y) > math.fabs(to_x - from_x)):
+    if (abs(to_y - from_y) > abs(to_x - from_x)):
         # swap x and y
-        from_x = to_point[1]
-        from_y = to_point[0]
-        to_x = from_point[1]
-        to_y = from_point[0]
+        from_x = from_point[1]
+        from_y = from_point[0]
+        to_x = to_point[1]
+        to_y = to_point[0]
         xy_swapped = True
 
     #update the lists so next switch works too
     from_point = (from_x,from_y,from_z)
     to_point = (to_x,to_y,to_z)
     
-    if (math.fabs(to_z - from_z) > math.fabs(to_x - from_x)):
+    if (abs(to_z - from_z) > abs(to_x - from_x)):
         # swap x and z
-        from_x = to_point[2]
-        from_z = to_point[0]
-        to_x = from_point[2]
-        to_z = from_point[0]
+        from_x = from_point[2]
+        from_z = from_point[0]
+        to_x = to_point[2]
+        to_z = to_point[0]
         xz_swapped = True
 
-    delta_x = math.fabs(to_x - from_x)
-    delta_y = math.fabs(to_y - from_y)
-    delta_z = math.fabs(to_z - from_z)
+    delta_x = abs(to_x - from_x)
+    delta_y = abs(to_y - from_y)
+    delta_z = abs(to_z - from_z)
 
     drift_xy = drift_xz = delta_x/2
 
