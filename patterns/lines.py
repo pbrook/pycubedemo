@@ -47,6 +47,6 @@ class Pattern(object):
             self.point1[i] += self.direction1[i]
         self.cube.clear()
         print('From ',self.point0,' to ',self.point1)
-        for point in cubehelper.line_to_points(self.point0,self.point1):
+        for point in cubehelper.line(self.point0,self.point1):
             print(point)
             self.cube.set_pixel(point,self.color)
