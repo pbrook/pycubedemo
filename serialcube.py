@@ -15,6 +15,7 @@ class TCPWriter(object):
         if host == "":
             host = "localhost"
         self.sock = socket.create_connection((host, int(port)))
+        self.sock.recv(4)
     def write(self, b):
         self.sock.sendall(b)
 
@@ -23,7 +24,9 @@ def FileWriter(name):
 
 def SerialWriter(port):
     import serial
-    return serial.Serial(port, 115200)
+    ser = serial.Serial(port, 115200, timeout=2)
+    ser.read(4)
+    return ser
 
 class SPIWriter(object):
     def __init__(self, port):
