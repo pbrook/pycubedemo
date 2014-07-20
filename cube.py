@@ -82,9 +82,7 @@ def run_pattern(cube, pattern):
                 sec_tick += 1.0
                 frames = 0
         except StopIteration:
-            return False
-        except KeyboardInterrupt:
-            return True
+            return
 
 def sigterm_handler(_signo, _stack_frame):
     raise KeyboardInterrupt
@@ -133,9 +131,11 @@ if args.pattern is None:
 else:
     plist = ','.join(args.pattern).split(',')
 patterns = load_patterns(c, plist)
-while True:
-    if run_pattern(c, next(patterns)):
-        break;
+try:
+    for p in patterns:
+        run_pattern(c, p)
+except KeyboardInterrupt:
+    pass
 c.single_buffer()
 c.clear()
 c.render()
