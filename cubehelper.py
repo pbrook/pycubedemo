@@ -1,5 +1,6 @@
 import random
 import numbers
+import math
 
 def line(p0, p1):
     d = [abs(p0[i] - p1[i]) for i in range(0, 3)]
@@ -43,6 +44,22 @@ def random_color():
         g = random.randrange(2)
         b = random.randrange(2)
     return (float(r), float(g), float(b))
+
+def plasma(val):
+    val = math.modf(val)[0] * 3.0
+    if val < 1.0:
+        r = val
+        g = 1.0 - r
+        b = 0.0
+    elif val < 2.0:
+        b = val - 1.0
+        r = 1.0 - b
+        g = 0.0
+    else:
+        g = val - 2.0
+        b = 1.0 - g
+        r = 0.0
+    return (r, g, b)
 
 def mix_color(color0, color1, level):
     f0 = color_to_float(color0)
