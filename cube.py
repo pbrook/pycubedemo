@@ -9,6 +9,7 @@ import itertools
 import pkgutil
 import time
 import signal
+import random
 
 def load_patterns(cube, match):
     patterns = {}
@@ -35,10 +36,12 @@ def load_patterns(cube, match):
         ordered = patterns.values()
     else:
         ordered = map(lambda x: patterns[x], match)
+    unordered = list(ordered)
+    random.shuffle(unordered)
     if args.noloop:
-        return iter(ordered)
+        return iter(unordered)
     else:
-        return itertools.cycle(ordered)
+        return itertools.cycle(unordered)
 
 # Returns true to quit
 def run_pattern(cube, pattern):
