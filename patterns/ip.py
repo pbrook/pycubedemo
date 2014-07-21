@@ -22,7 +22,7 @@ class Pattern(object):
                 self.message += ' '+realip
         self.position = 0
         self.double_buffer = True
-        return 0.2 / self.cube.size
+        return 0.35 / self.cube.size
     def tick(self):
         self.cube.clear()
         if self.position == 0:
