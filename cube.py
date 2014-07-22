@@ -10,6 +10,7 @@ import pkgutil
 import time
 import signal
 import cubehelper
+import random
 
 def load_patterns(cube, match):
     patterns = {}
@@ -33,7 +34,8 @@ def load_patterns(cube, match):
     if len(patterns) == 0:
         raise Exception("No patterns found")
     if match is None:
-        ordered = patterns.values()
+        ordered = list(patterns.values())
+        random.shuffle(ordered)
     else:
         ordered = map(lambda x: patterns[x], match)
     if args.noloop:
