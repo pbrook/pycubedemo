@@ -45,8 +45,14 @@ def random_color():
         b = random.randrange(2)
     return (float(r), float(g), float(b))
 
-def plasma(val):
-    val = math.modf(val)[0] * 3.0
+def pos_modf(val):
+    val = math.modf(val)[0]
+    if val < 0:
+        return val + 1.0
+    return val
+
+def color_plasma(val):
+    val = pos_modf(val) * 3.0
     if val < 1.0:
         r = val
         g = 1.0 - r
@@ -60,6 +66,12 @@ def plasma(val):
         b = 1.0 - g
         r = 0.0
     return (r, g, b)
+
+def mono_plasma(val):
+    val = pos_modf(val) * 2.0
+    if val > 1.0:
+        val = 2.0 - val
+    return (val, val, val)
 
 def mix_color(color0, color1, level):
     f0 = color_to_float(color0)

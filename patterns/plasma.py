@@ -28,16 +28,6 @@ class Pattern(object):
         self.offset = 0.0
         return DT
 
-    def color_for_energy(self, e):
-        level = math.modf(self.offset + e)[0]
-        if self.cube.color:
-            return color_from_val(int(level * 256))
-        else:
-            level = level * 2.0
-            if level > 1.0:
-                level = 2.0 - level
-            return (level, level, level)
-
     def tick(self):
         self.offset -= DT / 1.0
         if self.offset < 0:
@@ -51,5 +41,6 @@ class Pattern(object):
                     u = math.cos((x + offset) * scale)
                     v = math.cos((y + offset) * scale)
                     w = math.cos((z + offset) * scale)
-                    color = self.color_for_energy((u + v + w + 3.0) / 6.0)
+                    e = (u + v + w + 3.0) / 6.0
+                    color = self.cube.plasma(self.offset + e)
                     self.cube.set_pixel((x, y, z), color)

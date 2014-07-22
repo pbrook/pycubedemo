@@ -45,7 +45,7 @@ class Pattern(object):
             for (x, y, z) in self.quad:
                 z  += zbase
                 if (z >= 0) and (z < self.cube.size):
-                    self.cube.set_pixel((x, int(z), y), cubehelper.plasma(z / 4.0))
+                    self.cube.set_pixel((x, int(z), y), self.cube.plasma(z / 4.0))
             zbase += 4.0
         self.z_offset += 4.0 / FRAMERATE
         if self.z_offset > 0.0:

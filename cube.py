@@ -9,6 +9,7 @@ import itertools
 import pkgutil
 import time
 import signal
+import cubehelper
 
 def load_patterns(cube, match):
     patterns = {}
@@ -108,6 +109,11 @@ if args.port is None:
 else:
     import serialcube
     c = serialcube.Cube(args)
+
+if c.color:
+    c.plasma = cubehelper.color_plasma
+else:
+    c.plasma = cubehelper.mono_plasma
 
 if args.interval is None:
     if args.pattern is not None and len(args.pattern) == 1:

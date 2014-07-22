@@ -10,21 +10,6 @@ IQ = 10
 INTERPOLATE = 2
 INITIAL_ENERGY = 1.0
 
-def color_from_val(val):
-    if val < 85:
-        r = val * 3;
-        g = 255 - r;
-        b = 0;
-    elif val < 170:
-        b = (val - 85) * 3;
-        r = 255 - b;
-        g = 0;
-    else:
-        g = (val - 170) * 3;
-        b = 255 - g;
-        r = 0;
-    return (r, g, b)
-
 class Pattern(object):
     def init(self):
         self.body = []
@@ -44,7 +29,7 @@ class Pattern(object):
 
     def color_for_energy(self, e):
         if self.cube.color:
-            color = color_from_val(int(math.modf(e * 5.0)[0] * 256))
+            color = self.cube.plasma(e * 5.0)
         else:
             color = (1.0, 1.0, 1.0)
         return cubehelper.mix_color(0, color, e)
