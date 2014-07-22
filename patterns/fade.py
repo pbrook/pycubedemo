@@ -1,4 +1,4 @@
-# Swipe a plane across the cube in all 3 dimensions
+# Fade the whole cube in and out a single color
 # Copyright (C) Paul Brook <paul@nowt.org>
 # Released under the terms of the GNU General Public License version 3
 

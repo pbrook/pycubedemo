@@ -1,4 +1,4 @@
-# Display message a character at a time
+# Display IP addresses
 # Copyright (C) Paul Brook <paul@nowt.org>
 # Released under the terms of the GNU General Public License version 3
 

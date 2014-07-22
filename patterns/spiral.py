@@ -1,4 +1,4 @@
-# Walk over sides of a cube
+# A rotating spiral
 # Copyright (C) Paul Brook <paul@nowt.org>
 # Released under the terms of the GNU General Public License version 3
 
