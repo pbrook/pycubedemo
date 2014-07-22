@@ -115,8 +115,12 @@ if c.color:
 else:
     c.plasma = cubehelper.mono_plasma
 
+if args.pattern is None:
+    pattern_list = None
+else:
+    pattern_list = ','.join(args.pattern).split(',')
 if args.interval is None:
-    if args.pattern is not None and len(args.pattern) == 1:
+    if pattern_list is not None and len(pattern_list) == 1:
         args.interval = 0.0
     else:
         args.interval = 10.0
@@ -131,11 +135,7 @@ except:
 
 signal.signal(signal.SIGTERM, sigterm_handler)
 
-if args.pattern is None:
-    plist = None
-else:
-    plist = ','.join(args.pattern).split(',')
-patterns = load_patterns(c, plist)
+patterns = load_patterns(c, pattern_list)
 try:
     for p in patterns:
         run_pattern(c, p)
