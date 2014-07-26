@@ -78,6 +78,12 @@ def mix_color(color0, color1, level):
     f1 = color_to_float(color1)
     return tuple([f1[n] * level + f0[n] * (1.0 - level) for n in range(0, 3)])
 
+def color_to_hex(color):
+    if isinstance(color, numbers.Integral):
+        return color
+    (r, g, b) = color_to_int(color)
+    return (r << 16) | (g << 8) | b
+
 def color_to_int(color):
     if isinstance(color, numbers.Integral):
         return (color >> 16, (color >> 8) & 0xff, color & 0xff)
