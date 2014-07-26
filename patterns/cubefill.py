@@ -35,38 +35,50 @@ class Pattern(object):
             [(cs, cs, cs), (-1, -1, -1)], # 7
         ]
 
+        self.black = (0.0, 0.0, 0.0)
+
         self.corner = self.corners[random.randrange(0, 8)] # the current corner we're filling from
 
         return 0.6 / self.cube.size
 
     def tick(self):
-        o = self.offset
-        c = self.corner[0]
-        d = self.corner[1]
+        if (self.offset < self.cube.size):
+            self.draw_cubeface(self.corner, self.offset, self.filling_color)
+
+
+        # now cover it over with black
+        o = self.offset - 5
+        if o >= 0:
+            self.draw_cubeface(self.corner, o, self.black)
+
+        if o == self.cube.size-1:
+            self.offset = 0
+            self.corner = self.corners[random.randrange(0, 8)]
+            self.filling_color = cubehelper.random_color()
+        else:
+            self.offset += 1
+
+    def draw_cubeface(self, corner, offset, color):
+        o = offset
+        c = corner[0]
+        d = corner[1]
 
         corner1 = (c[0] + d[0]*o, c[1] + d[1]*o, c[2] + d[2]*o)
 
         # draw yz plane
         corner2 = (c[0] + d[0]*o, c[1], c[2])
         for coord in self.plane(corner1, corner2):
-            self.cube.set_pixel(coord, self.filling_color)
+            self.cube.set_pixel(coord, color)
 
         # draw xz plane
         corner2 = (c[0], c[1] + d[1]*o, c[2])
         for coord in self.plane(corner1, corner2):
-            self.cube.set_pixel(coord, self.filling_color)
+            self.cube.set_pixel(coord, color)
 
         # draw xy plane
         corner2 = (c[0], c[1], c[2] + d[2]*o)
         for coord in self.plane(corner1, corner2):
-            self.cube.set_pixel(coord, self.filling_color)
-
-        if self.offset == self.cube.size-1:
-            self.offset = 0
-            self.corner = self.corners[random.randrange(0, 8)]
-            self.filling_color = cubehelper.random_color()
-        else:
-            self.offset += 1
+            self.cube.set_pixel(coord, color)
 
     def plane(self, corner1, corner2):
         """Get the points inside the specified plane"""
