@@ -10,13 +10,15 @@ import math
 class Pattern(object):
     def init(self):
         self.message = 'Hello World'
+        self.saved_message = self.message
         self.position = 0
         self.double_buffer = True
-        return 0.5 / self.cube.size
+        return 0.35 / self.cube.size
     def tick(self):
         self.cube.clear()
         if self.position == 0:
             if self.message == '':
+                self.message = self.saved_message
                 raise StopIteration
             c = self.message[0]
             self.message = self.message[1:]

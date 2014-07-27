@@ -17,7 +17,8 @@ class Pattern(object):
             self.offset = 1 - self.cube.size
             self.phase += 1
             if self.phase == 3:
-                raise StopIteration;
+                self.phase = 0
+            raise StopIteration
         p0 = self.phase
         p1 = (p0 + 1) % 3
         p2 = (p1 + 1) % 3

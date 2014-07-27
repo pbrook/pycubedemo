@@ -69,3 +69,4 @@ class Pattern(object):
                 self.axis2 = tmp
             if n < 2:
                 self.mirror0 = not self.mirror0
+            raise StopIteration

@@ -22,6 +22,7 @@ class Pattern(object):
         self.current_size += self.direction
         if self.current_size == 0:
             self.direction *= -1
+            raise StopIteration
         elif self.current_size == self.max_size:
             self.direction *= -1
             self.color = cubehelper.random_color(self.color)

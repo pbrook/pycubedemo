@@ -20,13 +20,16 @@ class Pattern(object):
             realip = ip.replace('inet ','')
             if realip != '127.0.0.1':
                 self.message += ' '+realip
+        self.saved_message = self.message
         self.position = 0
         self.double_buffer = True
         return 0.35 / self.cube.size
+
     def tick(self):
         self.cube.clear()
         if self.position == 0:
             if self.message == '':
+                self.message = self.saved_message
                 raise StopIteration
             c = self.message[0]
             self.message = self.message[1:]

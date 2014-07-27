@@ -55,8 +55,10 @@ def run_pattern(cube, pattern):
     sec_tick = now + 1.0
     frames = 0
     if args.interval > 0:
+        partial = now + args.interval * 0.5
         expires = now + args.interval
     else:
+        partial = None
         expires = None
     print("Running pattern %s" % pattern.name)
     if db:
@@ -67,7 +69,12 @@ def run_pattern(cube, pattern):
         cube.clear()
     while True:
         try:
-            pattern.tick()
+            try:
+                pattern.tick()
+            except StopIteration:
+                if expires is not None and now > partial:
+                    raise
+                continue
             cube.render()
             if db:
                 cube.swap()
