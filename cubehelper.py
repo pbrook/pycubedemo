@@ -41,7 +41,10 @@ def random_color(other_color=(-1, -1, -1)):
     r = 0
     g = 0
     b = 0
-    while (r == 0 and g == 0 and b == 0) or (r == other_color[0] and g == other_color[1] and b == other_color[2]):
+
+    (other_r, other_g, other_b) = [int(x + 0.5) for x in color_to_float(other_color)]
+
+    while (r == 0 and g == 0 and b == 0) or (r == other_r and g == other_g and b == other_b):
         r = random.randrange(2)
         g = random.randrange(2)
         b = random.randrange(2)
