@@ -35,11 +35,16 @@ def line(p0, p1):
         y += dy
         z += dz
 
-def random_color():
+def random_color(other_color=(-1, -1, -1)):
+    """Return a random color as a float tuple, optionally ensuring that it is different to the other_color parameter."""
+
     r = 0
     g = 0
     b = 0
-    while r == 0 and g == 0 and b == 0:
+
+    (other_r, other_g, other_b) = [int(x + 0.5) for x in color_to_float(other_color)]
+
+    while (r == 0 and g == 0 and b == 0) or (r == other_r and g == other_g and b == other_b):
         r = random.randrange(2)
         g = random.randrange(2)
         b = random.randrange(2)
