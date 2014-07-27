@@ -7,9 +7,10 @@ import random
 import math
 
 # Frame delta-time
-DT = 1.0/8
-GRAVITY = 1.0
-FRICTION = 0.5
+DT = 1.0/16
+GRAVITY = 2.0
+CLIMB = 2.0
+FRICTION = math.pow(0.005, DT)
 FADE = 0.5
 # Detonation height
 APEX = 0.8
@@ -82,7 +83,7 @@ class Pattern(object):
     def climb(self):
         self.plot(self.rocket, (1.0, 1.0, 1.0))
         z = self.rocket.pos[2]
-        z += DT
+        z += CLIMB * DT
         if z >= APEX:
             self.explode()
         else:
