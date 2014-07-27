@@ -17,7 +17,7 @@ class Pattern(object):
         self.color = self.pick_color()
         self.next_color = self.pick_color()
         self.double_buffer = True
-        return 0.05
+        return 0.03
     def pick_color(self):
         if self.cube.color:
             return cubehelper.random_color()
