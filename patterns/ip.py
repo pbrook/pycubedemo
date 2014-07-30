@@ -6,20 +6,13 @@ import cubehelper
 import font
 import random
 import math
-import subprocess
-import re
+import socket
 
 COLORS = {' ':0x000000,'.':0xffffff,'0':0xffffff,'1':0xffffff,'2':0xff0000,'3':0x00ff00,'4':0x0000ff,'5':0xffff00,'6':0xff00ff,'7':0x00ffff,'8':0x00ffff,'9':0xff8000}
 
 class Pattern(object):
     def init(self):
-        ips = subprocess.check_output(['/sbin/ip','addr'])
-        regex = re.compile('inet [0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
-        self.message = ''
-        for ip in regex.findall(ips):
-            realip = ip.replace('inet ','')
-            if realip != '127.0.0.1':
-                self.message += ' '+realip
+        self.message = self.get_ip()
         self.position = 0
         self.double_buffer = True
         return 0.35 / self.cube.size
@@ -49,3 +42,10 @@ class Pattern(object):
         self.position += 1
         if self.position == self.cube.size:
             self.position = 0
+
+    def get_ip(self):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.connect(('8.8.8.8', 80))
+        name = sock.getsockname()[0]
+        sock.close()
+        return name
