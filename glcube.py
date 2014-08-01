@@ -132,8 +132,9 @@ class Cube(object):
         for x in range(0, self.size):
             for y in range(0, self.size):
                 for z in range(0, self.size):
-                    glUniform3fv(self.param_color, 1, self.pixels[x, y, z])
-                    glUniform3fv(self.param_offset, 1, (x * spacing, y * spacing, z * spacing))
+                    (r, g, b) = self.pixels[x, y, z]
+                    glUniform3f(self.param_color, r, g, b)
+                    glUniform3f(self.param_offset, x * spacing, y * spacing, z * spacing)
                     self.pixel_model.render()
         pygame.display.flip()
         for event in pygame.event.get():
