@@ -16,49 +16,60 @@ class ControllerServer(BaseHTTPServer.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write("""
 <html>
-    <head><title>LED Invaders</title></head>
-
+    <head>
+      <title>LED Invaders</title>
+      <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    </head>
     <body>
         <style>
-        button { font-size: 10em; height: 33% }
+        button { font-size: 30px; height: 30%; margin: 0; }
         button[name=forward], button[name=back] { width: 100% }
-        button[name=left],button[name=fire],button[name=right] { width: 33% }
+        button[name=left],button[name=fire],button[name=right] { width: 32% }
         button[name=fire] { background-color: #ffcccc; }
         </style>
-
-        <form method='post'>
+        <script>
+        $(function() {
+        $("button").click(function() {
+          $("button").attr("disabled", true);
+          $.ajax({
+            type: "POST",
+            url: "/" + $(this).attr("name"),
+            timeout: 3000,
+            error: function(data) {
+              $("button").attr("disabled", false);
+            },
+            success: function(data) {
+              $("button").attr("disabled", false);
+            }
+          });
+          return false;
+        });
+        });
+        </script>
         <p><button type='submit' name='forward'>FORWARD</button></p>
         <p><button type='submit' name='left'>LEFT</button>
         <button type='submit' name='fire'>FIRE</button>
         <button type='submit' name='right'>RIGHT</button></p>
         <p><button type='submit' name='back'>BACK</button></p>
-        </form>
     </body>
 </html>
         """)
 
     def do_POST(self):
-        ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))
-        if ctype == 'multipart/form-data':
-            postvars = cgi.parse_multipart(self.rfile, pdict)
-        elif ctype == 'application/x-www-form-urlencoded':
-            length = int(self.headers.getheader('content-length'))
-            postvars = cgi.parse_qs(self.rfile.read(length), keep_blank_values=1)
-        else:
-            postvars = {}
-        if 'forward' in postvars:
+        action = self.path
+        if 'forward' in action:
             self.server.player.move_forward()
-        if 'back' in postvars:
+        if 'back' in action:
             self.server.player.move_back()
-        if 'left' in postvars:
+        if 'left' in action:
             self.server.player.move_left()
-        if 'right' in postvars:
+        if 'right' in action:
             self.server.player.move_right()
-        if 'fire' in postvars:
+        if 'fire' in action:
             self.server.player.fire()
 
-        self.send_response(303)
-        self.send_header("Location", "/")
+        self.send_response(200)
         self.end_headers()
 
 
