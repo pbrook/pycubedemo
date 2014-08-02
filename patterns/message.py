@@ -9,7 +9,10 @@ import math
 
 class Pattern(object):
     def init(self):
-        self.message = 'Hello World'
+        if self.arg is None:
+            self.message = 'Hello World'
+        else:
+            self.message = self.arg
         self.position = 0
         self.double_buffer = True
         return 0.35 / self.cube.size

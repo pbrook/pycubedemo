@@ -14,8 +14,20 @@ import random
 
 def load_patterns(cube, match):
     patterns = {}
+    arglist = {}
+    if match is None:
+        namelist = None
+    else:
+        namelist = []
+        for name in match:
+            if ':' in name:
+                (name, arg) = name.split(':', 1)
+            else:
+                arg = None
+            namelist.append(name)
+            arglist[name] = arg
     for (finder, name, ispkg) in pkgutil.walk_packages(["patterns"]):
-        if match is not None and name not in match:
+        if match is not None and name not in arglist:
             continue
         print("Loading pattern module '%s'" % name)
         try:
@@ -30,6 +42,7 @@ def load_patterns(cube, match):
             pobj = constructor()
             pobj.name = name
             pobj.cube = cube
+            pobj.arg = arglist.get(name)
             patterns[name] = pobj
     if len(patterns) == 0:
         raise Exception("No patterns found")
@@ -37,7 +50,7 @@ def load_patterns(cube, match):
         ordered = list(patterns.values())
         random.shuffle(ordered)
     else:
-        ordered = map(lambda x: patterns[x], match)
+        ordered = map(lambda x: patterns[x], namelist)
     if args.noloop:
         return iter(ordered)
     else:
