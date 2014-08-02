@@ -54,6 +54,8 @@ class ControllerServer(BaseHTTPServer.BaseHTTPRequestHandler):
             self.server.player.move_left()
         if 'right' in postvars:
             self.server.player.move_right()
+        if 'fire' in postvars:
+            self.server.player.fire()
 
         self.send_response(303)
         self.send_header("Location", "/")
@@ -126,6 +128,7 @@ class Player(Actor):
         self.centre_x()
         self.centre_y()
         self.z = 0
+        self.bullets = []
 
     def move_forward(self):
         self.move_y(1)
@@ -139,6 +142,30 @@ class Player(Actor):
     def move_right(self):
         self.move_x(1)
 
+    def fire(self):
+        if len(self.bullets) < 3:
+            bullet = Bullet(self.cube)
+            bullet.setup(self)
+            self.bullets.append(bullet)
+
+
+class Bullet(Actor):
+    def init(self):
+        self.set_colour((255, 255, 255))
+        self.z = 0
+        self.ticker = 0
+        self.alive = True
+
+    def setup(self, player):
+        self.x = player.x
+        self.y = player.y
+
+    def tick(self):
+        self.ticker += 1
+        if self.ticker % 2 == 1:
+            self.move_z(1)
+            self.alive = self.z < self.cube.size-1
+        
 
 class Invader(Actor):
     def init(self):
@@ -175,5 +202,10 @@ class Pattern(object):
         self.invader.tick()
         self.player.draw()
         self.invader.draw()
+        for bullet in self.player.bullets:
+            bullet.tick()
+            bullet.draw()
+            if not bullet.alive:
+                self.player.bullets.remove(bullet)
         if not self.invader.alive:
             self.invader.init()
