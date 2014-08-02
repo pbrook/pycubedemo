@@ -2,9 +2,9 @@
 # Released under the terms of the GNU General Public License version 3
 
 import cubehelper
-import random
 import httpinput
-
+import math
+import random
 
 
 class Actor(object):
@@ -137,6 +137,7 @@ class Invader(Actor):
     def kill(self):
         self.game.score += 1
         self.state = 'dying'
+        self.opacity = 0.5
         self.game.invaders.append(Invader(self.game))
 
     def tick(self):
@@ -146,18 +147,21 @@ class Invader(Actor):
                 self.move_z(-1)
             if self.z == 0:
                 self.state = 'landed'
+                self.opacity = 0.50
+                self.game.score = max(0, self.game.score - 1)
+                self.game.invaders.remove(self)
+                self.game.landed.append(self)
+                self.game.invaders.append(Invader(self.game))
+
         elif self.state is 'dying':
             self.opacity -= 0.1
-            if self.ticker % (self.speed) == self.speed-1:
-                self.move_z(-1)
             if self.opacity <= 0.0:
+                self.opacity = 0
                 self.state = 'dead'
         elif self.state is 'dead':
             self.game.invaders.remove(self)
         elif self.state is 'landed':
-            self.game.score -= 1
-            self.game.invaders.remove(self)
-            self.game.invaders.append(Invader(self.game))
+            self.opacity = 0.01 + (math.sin(self.ticker / 5.0) + 1.0) * (0.10 / 2.0)
 
     def draw(self):
         c = cubehelper.mix_color((0, 0, 0), self.colour, self.opacity)
@@ -175,6 +179,7 @@ class Game(object):
         self.level = 10
         self.player = Player(self)
         self.invaders = [Invader(self)]
+        self.landed = []
         self.bullets = []
         self.score = 0
 
@@ -195,6 +200,9 @@ class Game(object):
         self.player.tick()
         self.player.draw()
         for invader in self.invaders:
+            invader.tick()
+            invader.draw()
+        for invader in self.landed:
             invader.tick()
             invader.draw()
         for bullet in self.bullets:
