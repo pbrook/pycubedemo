@@ -115,6 +115,9 @@ class Actor(object):
     def draw(self):
         self.cube.set_pixel(self.coords(), self.colour)
 
+    def collides_with(self, other):
+        return self.coords() == other.coords()
+
     def init(self):
         pass
 
@@ -205,6 +208,9 @@ class Pattern(object):
         for bullet in self.player.bullets:
             bullet.tick()
             bullet.draw()
+            if bullet.collides_with(self.invader):
+                self.invader.init()
+                self.player.bullets.remove(bullet)
             if not bullet.alive:
                 self.player.bullets.remove(bullet)
         if not self.invader.alive:
