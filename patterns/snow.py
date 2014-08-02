@@ -8,7 +8,10 @@ import cubehelper
 
 BLACK = (0,0,0)
 WHITE = (255,255,255)
-SPAWN_PROBABILITY = 0.5
+
+FRAME_RATE = 25
+FRAME_TIME = 1.0 / FRAME_RATE
+SPAWN_PROBABILITY = 5.0 / FRAME_RATE
 
 class Drop(object):
     def __init__(self, cube, x, y):
@@ -18,10 +21,10 @@ class Drop(object):
         self.z = -1
     def reset(self):
         self.z = self.cube.size
-        self.speed = random.uniform(0.2, 0.1)
+        self.speed = random.uniform(1, 2)
         self.color = cubehelper.mix_color(cubehelper.random_color(), WHITE, 0.9)
     def tick(self):
-        self.z -= self.speed
+        self.z -= self.speed * FRAME_TIME
         if self.z >= 0:
             self.set_pixel_interpolate_float_z(self.x, self.y, self.z, self.color)
     # TODO: generalize interpolation, place in cubehelper
@@ -47,7 +50,7 @@ class Pattern(object):
         for x in range(0, self.cube.size):
             for y in range(0, self.cube.size):
                 self.unused.append(Drop(self.cube, x, y))
-        return 0.1
+        return FRAME_TIME
     def spawn(self):
         d = self.unused.pop(random.randrange(len(self.unused)))
         d.reset()
