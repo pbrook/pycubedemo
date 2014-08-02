@@ -14,12 +14,28 @@ class ControllerServer(BaseHTTPServer.BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-type", "text/html")
         self.end_headers()
-        self.wfile.write("<html><head><title>LED Invaders</title></head>")
-        self.wfile.write("<body><style>button { font-size: 7em; };p { margin-left: auto; margin-right: auto; };</style><form method='post'>")
-        self.wfile.write("<p><button type='submit' name='forward'>forward</button></p>")
-        self.wfile.write("<p><button type='submit' name='left'>left</button> <button type='submit' name='right'>right</button></p>")
-        self.wfile.write("<p><button type='submit' name='back'>back</button></p>")
-        self.wfile.write("</form></p></body></html>")
+        self.wfile.write("""
+<html>
+    <head><title>LED Invaders</title></head>
+
+    <body>
+        <style>
+        button { font-size: 10em; height: 33% }
+        button[name=forward], button[name=back] { width: 100% }
+        button[name=left],button[name=fire],button[name=right] { width: 33% }
+        button[name=fire] { background-color: #ffcccc; }
+        </style>
+
+        <form method='post'>
+        <p><button type='submit' name='forward'>FORWARD</button></p>
+        <p><button type='submit' name='left'>LEFT</button>
+        <button type='submit' name='fire'>FIRE</button>
+        <button type='submit' name='right'>RIGHT</button></p>
+        <p><button type='submit' name='back'>BACK</button></p>
+        </form>
+    </body>
+</html>
+        """)
 
     def do_POST(self):
         ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))
