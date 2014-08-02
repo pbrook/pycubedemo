@@ -74,8 +74,9 @@ class ControllerServer(BaseHTTPServer.BaseHTTPRequestHandler):
 
 
 class Actor(object):
-    def __init__(self, cube, *args):
-        self.cube = cube
+    def __init__(self, game, *args):
+        self.game = game
+        self.cube = self.game.cube
         self.set_position()
         self.set_colour()
         self.init()
@@ -142,7 +143,6 @@ class Player(Actor):
         self.centre_x()
         self.centre_y()
         self.z = 0
-        self.bullets = []
 
     def move_forward(self):
         self.move_y(1)
@@ -157,22 +157,20 @@ class Player(Actor):
         self.move_x(1)
 
     def fire(self):
-        if len(self.bullets) < 3:
-            bullet = Bullet(self.cube)
-            bullet.setup(self)
-            self.bullets.append(bullet)
+        if len(self.game.bullets) < 3:
+            bullet = Bullet(self.game)
+            self.game.bullets.append(bullet)
 
 
 class Bullet(Actor):
     def init(self):
         self.set_colour((255, 255, 255))
         self.z = 0
+        self.x = self.game.player.x
+        self.y = self.game.player.y
+
         self.ticker = 0
         self.alive = True
-
-    def setup(self, player):
-        self.x = player.x
-        self.y = player.y
 
     def tick(self):
         self.ticker += 1
@@ -199,16 +197,14 @@ class Invader(Actor):
             self.move_z(-1)
 
 
-class Pattern(object):
-    def init(self):
-        self.double_buffer = True
+class Game(object):
+
+    def __init__(self, cube):
+        self.cube = cube
         self.level = 10
-        self.player = Player(self.cube)
-        self.invader = Invader(self.cube)
-        self.controller_server = BaseHTTPServer.HTTPServer(("0.0.0.0", 3010), ControllerServer)
-        self.controller_server.player = self.player
-        self.controller_thread = thread.start_new_thread(self.controller_server.serve_forever, ())
-        return 0.1
+        self.player = Player(self)
+        self.invader = Invader(self)
+        self.bullets = []
 
     def tick(self):
         self.cube.clear()
@@ -216,13 +212,25 @@ class Pattern(object):
         self.invader.tick()
         self.player.draw()
         self.invader.draw()
-        for bullet in self.player.bullets:
+        for bullet in self.bullets:
             bullet.tick()
             bullet.draw()
             if bullet.collides_with(self.invader):
                 self.invader.init()
-                self.player.bullets.remove(bullet)
+                self.bullets.remove(bullet)
             if not bullet.alive:
-                self.player.bullets.remove(bullet)
+                self.bullets.remove(bullet)
         if not self.invader.alive:
             self.invader.init()
+
+class Pattern(object):
+    def init(self):
+        self.double_buffer = True
+        self.game = Game(self.cube)
+        self.controller_server = BaseHTTPServer.HTTPServer(("0.0.0.0", 3010), ControllerServer)
+        self.controller_server.player = self.game.player
+        self.controller_thread = thread.start_new_thread(self.controller_server.serve_forever, ())
+        return 0.1
+
+    def tick(self):
+        self.game.tick()
