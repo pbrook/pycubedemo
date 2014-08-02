@@ -174,10 +174,20 @@ class Bullet(Actor):
 
     def tick(self):
         self.ticker += 1
+
+        for invader in self.game.invaders:
+            if self.collides_with(invader):
+                invader.kill()
+                self.game.bullets.remove(self)
+                return
+            if self.z >= self.cube.size-1:
+                self.game.bullets.remove(self)
+                return
+
         if self.ticker % 2 == 1:
             self.move_z(1)
             self.alive = self.z < self.cube.size-1
-        
+
 
 class Invader(Actor):
     def init(self):
@@ -187,14 +197,30 @@ class Invader(Actor):
         self.z = self.cube.size-1
         self.speed = 20
         self.ticker = 0
-        self.alive = True
+        self.state = 'alive'
+        self.opacity = 1.0
+
+    def kill(self):
+        self.state = 'dying'
+        self.game.invaders.append(Invader(self.game))
 
     def tick(self):
         self.ticker += 1
-        if self.ticker % self.speed == self.speed-1:
-            if self.z == 0:
-                self.alive = False
-            self.move_z(-1)
+        if self.state is 'alive':
+            if self.ticker % self.speed == self.speed-1:
+                self.move_z(-1)
+        elif self.state is 'dying':
+            self.opacity -= 0.1
+            if self.ticker % (self.speed) == self.speed-1:
+                self.move_z(-1)
+            if self.opacity <= 0.0:
+                self.state = 'dead'
+        elif self.state is 'dead':
+            self.game.invaders.remove(self)
+
+    def draw(self):
+        c = cubehelper.mix_color((0, 0, 0), self.colour, self.opacity)
+        self.cube.set_pixel(self.coords(), c)
 
 
 class Game(object):
@@ -203,25 +229,20 @@ class Game(object):
         self.cube = cube
         self.level = 10
         self.player = Player(self)
-        self.invader = Invader(self)
+        self.invaders = [Invader(self)]
         self.bullets = []
 
     def tick(self):
         self.cube.clear()
         self.player.tick()
-        self.invader.tick()
         self.player.draw()
-        self.invader.draw()
+        for invader in self.invaders:
+            invader.tick()
+            invader.draw()
         for bullet in self.bullets:
             bullet.tick()
             bullet.draw()
-            if bullet.collides_with(self.invader):
-                self.invader.init()
-                self.bullets.remove(bullet)
-            if not bullet.alive:
-                self.bullets.remove(bullet)
-        if not self.invader.alive:
-            self.invader.init()
+
 
 class Pattern(object):
     def init(self):
