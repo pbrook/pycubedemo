@@ -201,6 +201,7 @@ class Invader(Actor):
         self.opacity = 1.0
 
     def kill(self):
+        self.game.score += 1
         self.state = 'dying'
         self.game.invaders.append(Invader(self.game))
 
@@ -209,6 +210,8 @@ class Invader(Actor):
         if self.state is 'alive':
             if self.ticker % self.speed == self.speed-1:
                 self.move_z(-1)
+            if self.z == 0:
+                self.state = 'landed'
         elif self.state is 'dying':
             self.opacity -= 0.1
             if self.ticker % (self.speed) == self.speed-1:
@@ -217,10 +220,18 @@ class Invader(Actor):
                 self.state = 'dead'
         elif self.state is 'dead':
             self.game.invaders.remove(self)
+        elif self.state is 'landed':
+            self.game.score -= 1
+            self.game.invaders.remove(self)
+            self.game.invaders.append(Invader(self.game))
 
     def draw(self):
         c = cubehelper.mix_color((0, 0, 0), self.colour, self.opacity)
         self.cube.set_pixel(self.coords(), c)
+
+    def collides_with(self, other):
+        return (self.state is 'alive' or self.state is 'landed') and \
+            self.coords() == other.coords()
 
 
 class Game(object):
@@ -231,6 +242,7 @@ class Game(object):
         self.player = Player(self)
         self.invaders = [Invader(self)]
         self.bullets = []
+        self.score = 0
 
     def tick(self):
         self.cube.clear()
@@ -242,6 +254,10 @@ class Game(object):
         for bullet in self.bullets:
             bullet.tick()
             bullet.draw()
+
+        for i in range(1, 10):
+            if self.score >= i * 3 and len(self.invaders) <  i:
+                self.invaders.append(Invader(self))
 
 
 class Pattern(object):
