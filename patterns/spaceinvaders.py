@@ -4,7 +4,6 @@
 import BaseHTTPServer
 import cgi
 import cubehelper
-import numpy
 import random
 import thread
 
@@ -39,7 +38,7 @@ class ControllerServer(BaseHTTPServer.BaseHTTPRequestHandler):
             self.server.player.move_left()
         if 'right' in postvars:
             self.server.player.move_right()
-        
+
         self.send_response(303)
         self.send_header("Location", "/")
         self.end_headers()
@@ -62,21 +61,20 @@ class Actor(object):
         self.y = y
         self.z = z
 
-    
     def move_x(self, delta):
         self.x += delta
         if self.x < 0:
             self.x = 0
         if self.x > self.cube.size - 1:
             self.x = self.cube.size - 1
-    
+
     def move_y(self, delta):
         self.y += delta
         if self.y < 0:
             self.y = 0
         if self.y > self.cube.size - 1:
             self.y = self.cube.size - 1
-    
+
     def move_z(self, delta):
         self.z += delta
         if self.z < 0:
