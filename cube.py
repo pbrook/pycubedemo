@@ -67,14 +67,16 @@ def run_pattern(cube, pattern):
     else:
         cube.single_buffer()
         cube.clear()
+    null_iteration = False
     while True:
         try:
             try:
                 pattern.tick()
+                null_iteration = False
             except StopIteration:
-                if expires is not None and now > partial:
+                if null_iteration:
                     raise
-                continue
+                null_iteration = True
             cube.render()
             if db:
                 cube.swap()

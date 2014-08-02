@@ -18,16 +18,13 @@ def walker(cube):
 
 class Pattern(object):
     def init(self):
-        self.saved_message = 'Leeds Hackspace'
+        self.message = 'Leeds Hackspace'
         self.position = 0
         self.double_buffer = True
         self.pos = [pos for pos in walker(self.cube)]
-        self.reset()
-        return 0.5 / self.cube.size
-    def reset(self):
         self.bitmap = [0] * len(self.pos)
-        self.message = self.saved_message
         self.color = cubehelper.random_color()
+        return 0.5 / self.cube.size
     def tick(self):
         self.cube.clear()
         while len(self.bitmap) < len(self.pos):
@@ -40,7 +37,6 @@ class Pattern(object):
                 self.bitmap.extend(font.font_data[n])
             self.bitmap.append(0)
         if len(self.bitmap) == 0:
-            self.reset()
             raise StopIteration
         for i in range(0, min(len(self.bitmap), len(self.pos))):
             mask = self.bitmap[i]
