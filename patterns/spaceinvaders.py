@@ -1,9 +1,48 @@
 # Copyright (C) John Leach <john@johnleach.co.uk>
 # Released under the terms of the GNU General Public License version 3
 
+import BaseHTTPServer
+import cgi
 import cubehelper
 import numpy
 import random
+import thread
+
+
+class ControllerServer(BaseHTTPServer.BaseHTTPRequestHandler):
+
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+        self.wfile.write("<html><head><title>LED Invaders</title></head>")
+        self.wfile.write("<body><style>button { font-size: 7em; };p { margin-left: auto; margin-right: auto; };</style><form method='post'>")
+        self.wfile.write("<p><button type='submit' name='forward'>forward</button></p>")
+        self.wfile.write("<p><button type='submit' name='left'>left</button> <button type='submit' name='right'>right</button></p>")
+        self.wfile.write("<p><button type='submit' name='back'>back</button></p>")
+        self.wfile.write("</form></p></body></html>")
+
+    def do_POST(self):
+        ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))
+        if ctype == 'multipart/form-data':
+            postvars = cgi.parse_multipart(self.rfile, pdict)
+        elif ctype == 'application/x-www-form-urlencoded':
+            length = int(self.headers.getheader('content-length'))
+            postvars = cgi.parse_qs(self.rfile.read(length), keep_blank_values=1)
+        else:
+            postvars = {}
+        if 'forward' in postvars:
+            self.server.player.move_forward()
+        if 'back' in postvars:
+            self.server.player.move_back()
+        if 'left' in postvars:
+            self.server.player.move_left()
+        if 'right' in postvars:
+            self.server.player.move_right()
+        
+        self.send_response(303)
+        self.send_header("Location", "/")
+        self.end_headers()
 
 
 class Actor(object):
@@ -23,12 +62,27 @@ class Actor(object):
         self.y = y
         self.z = z
 
+    
+    def move_x(self, delta):
+        self.x += delta
+        if self.x < 0:
+            self.x = 0
+        if self.x > self.cube.size - 1:
+            self.x = self.cube.size - 1
+    
+    def move_y(self, delta):
+        self.y += delta
+        if self.y < 0:
+            self.y = 0
+        if self.y > self.cube.size - 1:
+            self.y = self.cube.size - 1
+    
     def move_z(self, delta):
         self.z += delta
         if self.z < 0:
             self.z = 0
         if self.z > self.cube.size - 1:
-            self.z = self.cube.size -1
+            self.z = self.cube.size - 1
 
     def centre_x(self):
         self.x = self.cube.size / 2
@@ -59,6 +113,18 @@ class Player(Actor):
         self.centre_y()
         self.z = 0
 
+    def move_forward(self):
+        self.move_y(1)
+
+    def move_back(self):
+        self.move_y(-1)
+
+    def move_left(self):
+        self.move_x(-1)
+
+    def move_right(self):
+        self.move_x(1)
+
 
 class Invader(Actor):
     def init(self):
@@ -66,7 +132,7 @@ class Invader(Actor):
         self.x = random.randint(0, self.cube.size-1)
         self.y = random.randint(0, self.cube.size-1)
         self.z = self.cube.size-1
-        self.speed = 5
+        self.speed = 20
         self.ticker = 0
         self.alive = True
 
@@ -80,28 +146,14 @@ class Invader(Actor):
 
 class Pattern(object):
     def init(self):
+        self.double_buffer = True
         self.level = 10
         self.player = Player(self.cube)
         self.invader = Invader(self.cube)
+        self.controller_server = BaseHTTPServer.HTTPServer(("0.0.0.0", 3010), ControllerServer)
+        self.controller_server.player = self.player
+        self.controller_thread = thread.start_new_thread(self.controller_server.serve_forever, ())
         return 0.1
-
-    def randomise_direction(self):
-        self.direction = numpy.array([random.randint(0,1), random.randint(0, 1), random.randint(0,1)])
-        for axis in range(0,3):
-            if (self.position[axis] == self.cube.size-1):
-                self.direction[axis] = 0
-            if (self.position[axis] == 0):
-                self.direction[axis] = 1
-
-    def moveaxis(self,axis):
-        if (self.direction[axis] == 1):
-            self.position[axis] += 1
-            if (self.position[axis] == self.cube.size-1):
-                self.randomise_direction()
-        else:
-            self.position[axis] -= 1
-            if (self.position[axis] == 0):
-                self.randomise_direction()
 
     def tick(self):
         self.cube.clear()
