@@ -231,7 +231,10 @@ class Game(object):
         self.invaders = [Invader(self)]
         self.landed = []
         self.bullets = []
-        self.score = 0
+        if ai:
+            self.score = 4
+        else:
+            self.score = 1
 
     def handle_action(self, action):
         if 'forward' in action:
