@@ -47,7 +47,7 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
           $("button").attr("disabled", true);
           $.ajax({
             type: "POST",
-            url: "/" + $(this).attr("name"),
+            url: $(this).attr("name"),
             timeout: 3000,
             error: function(data) {
               $("button").attr("disabled", false);
