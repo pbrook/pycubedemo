@@ -7,7 +7,7 @@ import thread
 import collections
 import itertools
 
-PageInfo = collections.namedtuple('PageInfo', ['title', 'buttons', 'callback', 'actions'])
+PageInfo = collections.namedtuple('PageInfo', ['title', 'buttons', 'callback'])
 
 class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
@@ -70,8 +70,7 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.server.page_info.callback(self.path)
 
 def StartHTTP(port, title, buttons, callback):
-    actions = frozenset(itertools.chain(*buttons))
     srv = BaseHTTPServer.HTTPServer(("0.0.0.0", port), RequestHandler)
-    srv.page_info = PageInfo(title, buttons, callback, actions)
+    srv.page_info = PageInfo(title, buttons, callback)
     srv = thread.start_new_thread(srv.serve_forever, ())
     return srv
