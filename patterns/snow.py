@@ -26,21 +26,9 @@ class Drop(object):
     def tick(self):
         self.z -= self.speed * FRAME_TIME
         if self.z >= 0:
-            self.set_pixel_interpolate_float_z(self.x, self.y, self.z, self.color)
-    # TODO: generalize interpolation, place in cubehelper
-    # assumes z > 0
-    def set_pixel_interpolate_float_z(self, x, y, z, color):
-        # we're always on a pixel, or between two
-        if float(int(z)) == z: # on pixel
-            self.cube.set_pixel((x, y, int(z)), color)
-        else: # between
-            z0 = int(math.floor(z))
-            z1 = int(math.floor(z+1))
-            z1_strength = z - z0
-            z0_strength = 1 - z1_strength
-
-            self.cube.set_pixel((x, y, z0), cubehelper.mix_color(BLACK, color, z0_strength))
-            self.cube.set_pixel((x, y, z1), cubehelper.mix_color(BLACK, color, z1_strength))
+            position_float = (self.x,self.y,self.z)
+            pixels = cubehelper.sanitized_interpolated(position_float, self.color, self.cube.size)
+            self.cube.set_pixels(pixels)
 
 class Pattern(object):
     def init(self):

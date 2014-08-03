@@ -99,6 +99,9 @@ def color_to_int(color):
         b = int(b * 256.0 - 0.5)
     return (r, g, b)
 
+# WARN: rounding behaviour isn't perfect, eg
+#   >>> cubehelper.color_to_float((0,0,0))
+#   (0.001953125, 0.001953125, 0.001953125)
 def color_to_float(color):
     if isinstance(color, numbers.Integral):
         r = color >> 16
@@ -111,3 +114,86 @@ def color_to_float(color):
         g = (g + 0.5) / 256.0
         b = (b + 0.5) / 256.0
     return (r, g, b)
+
+# in 3d space any floating coord lies between 8 pixels (or exactly on/between)
+# return a list of the surrounding 8 pixels with the color scaled proportionately
+# ie list of 8x ((x,y,z), (r,g,b))
+# Due to the rounding issues in color_to_float we end up with values where
+# we'd expect 0 (which would allow us to clean up black pixels)
+def interpolated_pixels_from_point(xyz, color):
+    (x, y, z) = xyz
+
+    x0 = int(x)
+    y0 = int(y)
+    z0 = int(z)
+
+    x1 = x0 + 1
+    y1 = y0 + 1
+    z1 = z0 + 1
+
+    # weightings on each axis
+    x1w = x - x0
+    y1w = y - y0
+    z1w = z - z0
+
+    x0w = 1 - x1w
+    y0w = 1 - y1w
+    z0w = 1 - z1w
+
+    # weighting for each of the pixels
+    c000w = x0w * y0w * z0w
+    c001w = x0w * y0w * z1w
+    c010w = x0w * y1w * z0w
+    c011w = x0w * y1w * z1w
+    c100w = x1w * y0w * z0w
+    c101w = x1w * y0w * z1w
+    c110w = x1w * y1w * z0w
+    c111w = x1w * y1w * z1w
+
+    black = (0,0,0)
+
+    c000 = mix_color(black, color, c000w)
+    c001 = mix_color(black, color, c001w)
+    c010 = mix_color(black, color, c010w)
+    c011 = mix_color(black, color, c011w)
+    c100 = mix_color(black, color, c100w)
+    c101 = mix_color(black, color, c101w)
+    c110 = mix_color(black, color, c110w)
+    c111 = mix_color(black, color, c111w)
+
+    return [
+      ((x0, y0, z0), c000),
+      ((x0, y0, z1), c001),
+      ((x0, y1, z0), c010),
+      ((x0, y1, z1), c011),
+      ((x1, y0, z0), c100),
+      ((x1, y0, z1), c101),
+      ((x1, y1, z0), c110),
+      ((x1, y1, z1), c111)
+    ]
+
+# This doesn't check for negative coords
+def restrict_pixels_to_cube_bounds(pixels, cube_size):
+    return [
+        pixel for pixel in pixels if (
+            pixel[0][0] < cube_size and
+            pixel[0][1] < cube_size and
+            pixel[0][2] < cube_size )
+    ]
+
+def restrict_pixels_to_non_black(pixels):
+    threshold = 0.002 # this is mostly to work round the rounding issue above
+    return [
+        pixel for pixel in pixels if (
+            pixel[1][0] > threshold and
+            pixel[1][1] > threshold and
+            pixel[1][2] > threshold )
+    ]
+
+# provide xyz as float coords, returns a list of between one and 8 pixels
+def sanitized_interpolated(xyz, color, cube_size):
+    return restrict_pixels_to_non_black(
+             restrict_pixels_to_cube_bounds(
+                interpolated_pixels_from_point(xyz, color),
+                cube_size
+           ))
