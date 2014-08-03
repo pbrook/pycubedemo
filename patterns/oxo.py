@@ -11,8 +11,10 @@ import httpinput
 
 DT = 1.0/25
 
-WIN_DELAY = 2.0
+WIN_DELAY = 4.0
 TURN_DELAY = 0.3
+DIM_AUTO=0.7
+DIM_MANUAL=0.3
 
 WHITE = 0xffffff
 RED = 0xff0000
@@ -197,7 +199,11 @@ class Pattern(object):
 
         color_lut = [0, RED, BLUE]
         dim = 2 - self.current_player
-        color_lut[dim] = cubehelper.mix_color(0, color_lut[dim], 0.70)
+        if self.server is None:
+            bright = DIM_AUTO
+        else:
+            bright = DIM_MANUAL
+        color_lut[dim] = cubehelper.mix_color(0, color_lut[dim], bright)
         for y in range(0, 4):
             for z in range(0, 4):
                 for x in range(0, 4):
