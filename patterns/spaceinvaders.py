@@ -8,7 +8,7 @@ import random
 
 
 class Actor(object):
-    def __init__(self, game, *args):
+    def __init__(self, game):
         self.game = game
         self.cube = self.game.cube
         self.set_position()
@@ -72,11 +72,18 @@ class Actor(object):
 
 
 class Player(Actor):
+    def __init__(self, game, ai):
+        Actor.__init__(self, game)
+        self.ai = ai
+
     def init(self):
         self.set_colour((0, 99, 0))
         self.centre_x()
         self.centre_y()
         self.z = 0
+        self.ai_tick = 0
+        self.target = None
+        self.ignore = []
 
     def move_forward(self):
         self.move_y(1)
@@ -94,6 +101,49 @@ class Player(Actor):
         if len(self.game.bullets) < 3:
             bullet = Bullet(self.game)
             self.game.bullets.append(bullet)
+
+    def tick(self):
+        if not self.ai:
+            return
+        self.ai_tick += 1
+        if self.ai_tick >= 4:
+            return
+        self.ai_tick = 0
+        target = self.target
+        if len(self.game.bullets) == 0:
+            self.ignore = []
+        while len(self.ignore) > 0 and self.ignore[0].state is not 'alive':
+            self.ignore.pop(0)
+        if (target is None) or (target.state is not 'alive'):
+            target = None
+            for invader in self.game.invaders:
+                if invader in self.ignore:
+                    continue
+                if invader.state is not 'alive':
+                    continue
+                dist = abs(self.x - invader.x) + abs(self.y - invader.y)
+                if target is None:
+                    target = invader
+                    target_dist = dist
+                    continue
+                if invader.z < target.z or (invader.z == target.z and dist < target_dist):
+                    target = invader
+                    target_dist = dist
+            self.target = target
+
+        if target is not None:
+            if target.x > self.x:
+                self.move_right()
+            elif target.x < self.x:
+                self.move_left()
+            elif target.y > self.y:
+                self.move_forward()
+            elif target.y < self.y:
+                self.move_back()
+            else:
+                self.fire();
+                self.ignore.append(target)
+                self.target = None
 
 
 class Bullet(Actor):
@@ -174,10 +224,10 @@ class Invader(Actor):
 
 class Game(object):
 
-    def __init__(self, cube):
+    def __init__(self, cube, ai):
         self.cube = cube
         self.level = 10
-        self.player = Player(self)
+        self.player = Player(self, ai)
         self.invaders = [Invader(self)]
         self.landed = []
         self.bullets = []
@@ -218,13 +268,12 @@ class Game(object):
 
 class Pattern(object):
     def init(self):
-        if self.arg is None:
-            raise StopIteration
-        port = int(self.arg)
         self.double_buffer = True
-        self.game = Game(self.cube)
+        self.game = Game(self.cube, self.arg is None)
         buttons = [['forward'], ['left', 'fire#background-color: #ffcccc', 'right'],['back']]
-        httpinput.StartHTTP(port, "LED Invaders", buttons, self.game.handle_action)
+        if self.arg is not None:
+            port = int(self.arg)
+            self.server = httpinput.StartHTTP(port, "LED Invaders", buttons, self.game.handle_action)
         return 0.1
 
     def tick(self):
