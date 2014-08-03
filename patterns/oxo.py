@@ -11,6 +11,9 @@ import httpinput
 
 DT = 1.0/25
 
+WIN_DELAY = 2.0
+TURN_DELAY = 0.2
+
 WHITE = 0xffffff
 RED = 0xff0000
 BLUE = 0x0000ff
@@ -37,9 +40,6 @@ class Pattern(object):
         self.server = None
 
     def init(self):
-        if self.arg is None:
-            raise StopIteration
-        port = int(self.arg)
         self.grid = numpy.zeros((4,4,4), 'i')
         self.double_buffer = True
         self.cursor = [0, 0, 0]
@@ -50,10 +50,12 @@ class Pattern(object):
         self.cnext = next(self.coffset_iter)
         self.current_player = 0
         self.won_line = None
-        if self.server is None:
+        self.winner = None
+        if self.server is None and self.arg is not None:
+            port = int(self.arg)
             buttons = [['up', 'out'], ['down', 'in'], ['left', 'right'], ['place']]
             self.server = httpinput.StartHTTP(port, 'OXO', buttons, self.action)
-        self.ai_tick = 0
+        self.ai_tick = TURN_DELAY
         return DT
 
     def check_won(self):
@@ -66,8 +68,12 @@ class Pattern(object):
                     break
             if won:
                 self.won_line = l;
-                return True
-        return False
+                self.winner = self.current_player
+        if self.winner is None:
+            if numpy.all(self.grid):
+                self.winner = -1
+        if self.winner is not None:
+            self.ai_tick = WIN_DELAY
 
     def ai_find_pos(self):
         ai_score = {}
@@ -130,7 +136,8 @@ class Pattern(object):
         if self.grid[pos] != 0:
             return
         self.grid[pos] = self.current_player + 1
-        if not self.check_won():
+        self.check_won()
+        if self.winner is None:
             self.current_player = 1 - self.current_player
 
     def action(self, action):
@@ -142,7 +149,7 @@ class Pattern(object):
             raise ValueError
         if player != self.current_player:
             return
-        if self.won_line is not None:
+        if self.winner is not None:
             return
         cmd = al[2]
         if cmd == 'up':
@@ -195,9 +202,9 @@ class Pattern(object):
                 for x in range(0, 4):
                     color = color_lut[self.grid[x, y, z]]
                     self.box(x, y, z, color)
-        if self.won_line is None:
+        if self.winner is None:
             draw_cursor(self.cursor)
-        else:
+        if self.won_line is not None:
             for pos in self.won_line:
                 draw_cursor(pos)
         self.ccount += self.cdelta * DT
@@ -205,12 +212,10 @@ class Pattern(object):
             self.ccount -= 1.0
             self.coffset = self.cnext
             self.cnext = next(self.coffset_iter)
-        self.ai_tick -= DT
+        if (self.current_player == 1) or (self.server is None) or (self.winner is not None):
+            self.ai_tick -= DT
         if self.ai_tick < 0:
-            if self.won_line is not None:
+            if self.winner is not None:
                 raise StopIteration
+            self.ai_tick = TURN_DELAY
             self.do_ai()
-            if self.won_line is None:
-                self.ai_tick = 0.01
-            else:
-                self.ai_tick = 10
