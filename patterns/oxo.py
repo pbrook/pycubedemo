@@ -105,7 +105,8 @@ class Pattern(object):
             for pos in free:
                 if (len(other) > 0) and (len(mine) > 0):
                     change_score(pos, -1)
-                elif (len(mine) > 2) or (len(other) > 2):
+                elif (len(mine) >= 2) or (len(other) >= 2):
+                    # Disabling this makes the AI dumb
                     change_score(pos, 1)
                 else:
                     change_score(pos, 0)
