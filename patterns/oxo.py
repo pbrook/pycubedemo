@@ -22,12 +22,15 @@ def diagonals():
             yield [(x, i, y) for i in range(0,4)]
             yield [(i, x, y) for i in range(0,4)]
         yield [(x, i, i) for i in range(0,4)]
-        yield [(x, i, i) for i in range(0,4)]
         yield [(x, i, 3-i) for i in range(0,4)]
+        yield [(i, x, i) for i in range(0,4)]
+        yield [(i, x, 3-i) for i in range(0,4)]
+        yield [(i, i, x) for i in range(0,4)]
+        yield [(i, 3-i, x) for i in range(0,4)]
     yield [(i, i, i) for i in range(0,4)]
     yield [(i, i, 3-i) for i in range(0,4)]
     yield [(i, 3-i, i) for i in range(0,4)]
-    yield [(i, 3-i, i) for i in range(0,4)]
+    yield [(i, 3-i, 3-i) for i in range(0,4)]
 
 class Pattern(object):
     def __init__(self):
