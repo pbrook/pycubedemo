@@ -65,9 +65,12 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         """ % {'title':info.title, 'bstyle':bstyle, 'bstr':bstr})
 
     def do_POST(self):
-        self.send_response(200)
+        try:
+            self.server.page_info.callback(self.path)
+            self.send_response(200)
+        except ValueError:
+            self.send_response(400)
         self.end_headers()
-        self.server.page_info.callback(self.path)
 
 def StartHTTP(port, title, buttons, callback):
     srv = BaseHTTPServer.HTTPServer(("0.0.0.0", port), RequestHandler)

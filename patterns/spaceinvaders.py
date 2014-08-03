@@ -194,6 +194,8 @@ class Game(object):
             self.player.move_right()
         elif 'fire' in action:
             self.player.fire()
+        else:
+            raise ValueError
 
     def tick(self):
         self.cube.clear()
