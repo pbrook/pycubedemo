@@ -30,6 +30,9 @@ def diagonals():
     yield [(i, 3-i, i) for i in range(0,4)]
 
 class Pattern(object):
+    def __init__(self):
+        self.server = None
+
     def init(self):
         if self.arg is None:
             raise StopIteration
@@ -44,8 +47,10 @@ class Pattern(object):
         self.cnext = next(self.coffset_iter)
         self.current_player = 0
         self.won_line = None
-        buttons = [['up', 'out'], ['down', 'in'], ['left', 'right'], ['place']]
-        httpinput.StartHTTP(port, 'OXO', buttons, self.action)
+        if self.server is None:
+            buttons = [['up', 'out'], ['down', 'in'], ['left', 'right'], ['place']]
+            self.server = httpinput.StartHTTP(port, 'OXO', buttons, self.action)
+        self.ai_tick = 0
         return DT
 
     def check_won(self):
@@ -60,6 +65,57 @@ class Pattern(object):
                 self.won_line = l;
                 return True
         return False
+
+    def ai_find_pos(self):
+        ai_score = {}
+        def change_score(pos, delta):
+            if pos in ai_score:
+                ai_score[pos] += delta
+            else:
+                ai_score[pos] = delta
+        my_val = self.current_player + 1
+        other_3 = None
+        for l in diagonals():
+            free = set()
+            mine = set()
+            other = set()
+            for pos in l:
+                val = self.grid[pos]
+                if val == 0:
+                    free.add(pos)
+                elif val == my_val:
+                    mine.add(pos)
+                else:
+                    other.add(pos)
+            if len(free) == 0:
+                continue
+            if len(mine) == 3:
+                return free.pop()
+            if len(other) == 3:
+                other_3 = free.pop()
+            for pos in free:
+                if (len(other) > 0) and (len(mine) > 0):
+                    change_score(pos, -1)
+                elif (len(mine) > 2) or (len(other) > 2):
+                    change_score(pos, 1)
+                else:
+                    change_score(pos, 0)
+        if other_3 is not None:
+            return other_3
+        best = set()
+        best_score = -1000
+        for pos in ai_score:
+            if ai_score[pos] > best_score:
+                best = set([pos])
+                best_score = ai_score[pos]
+            elif ai_score[pos] == best_score:
+                best.add(pos)
+        return random.choice(list(best))
+
+    def do_ai(self):
+        pos = self.ai_find_pos()
+        self.cursor = list(pos)
+        self.set_block()
 
     def move_cursor(self, axis, val):
         x = self.cursor[axis] + val;
@@ -130,7 +186,7 @@ class Pattern(object):
 
         color_lut = [0, RED, BLUE]
         dim = 2 - self.current_player
-        color_lut[dim] = cubehelper.mix_color(0, color_lut[dim], 0.20)
+        color_lut[dim] = cubehelper.mix_color(0, color_lut[dim], 0.50)
         for y in range(0, 4):
             for z in range(0, 4):
                 for x in range(0, 4):
@@ -146,3 +202,12 @@ class Pattern(object):
             self.ccount -= 1.0
             self.coffset = self.cnext
             self.cnext = next(self.coffset_iter)
+        self.ai_tick -= DT
+        if self.ai_tick < 0:
+            if self.won_line is not None:
+                raise StopIteration
+            self.do_ai()
+            if self.won_line is None:
+                self.ai_tick = 0.01
+            else:
+                self.ai_tick = 10
