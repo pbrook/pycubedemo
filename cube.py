@@ -14,8 +14,20 @@ import random
 
 def load_patterns(cube, match):
     patterns = {}
+    arglist = {}
+    if match is None:
+        namelist = None
+    else:
+        namelist = []
+        for name in match:
+            if ':' in name:
+                (name, arg) = name.split(':', 1)
+            else:
+                arg = None
+            namelist.append(name)
+            arglist[name] = arg
     for (finder, name, ispkg) in pkgutil.walk_packages(["patterns"]):
-        if match is not None and name not in match:
+        if match is not None and name not in arglist:
             continue
         print("Loading pattern module '%s'" % name)
         try:
@@ -30,6 +42,7 @@ def load_patterns(cube, match):
             pobj = constructor()
             pobj.name = name
             pobj.cube = cube
+            pobj.arg = arglist.get(name)
             patterns[name] = pobj
     if len(patterns) == 0:
         raise Exception("No patterns found")
@@ -37,7 +50,7 @@ def load_patterns(cube, match):
         ordered = list(patterns.values())
         random.shuffle(ordered)
     else:
-        ordered = map(lambda x: patterns[x], match)
+        ordered = map(lambda x: patterns[x], namelist)
     if args.noloop:
         return iter(ordered)
     else:
@@ -45,36 +58,38 @@ def load_patterns(cube, match):
 
 # Returns true to quit
 def run_pattern(cube, pattern):
-    interval = pattern.init()
     try:
-        db = pattern.double_buffer
-    except:
-        db = False
-    now = time.time()
-    next_tick = now + interval
-    sec_tick = now + 1.0
-    frames = 0
-    if args.interval > 0:
-        partial = now + args.interval * 0.5
-        expires = now + args.interval
-    else:
-        partial = None
-        expires = None
-    print("Running pattern %s" % pattern.name)
-    if db:
-        cube.clear()
-        cube.swap()
-    else:
-        cube.single_buffer()
-        cube.clear()
-    while True:
+        interval = pattern.init()
         try:
+            db = pattern.double_buffer
+        except:
+            db = False
+        now = time.time()
+        next_tick = now + interval
+        sec_tick = now + 1.0
+        frames = 0
+        if args.interval > 0:
+            partial = now + args.interval * 0.5
+            expires = now + args.interval
+        else:
+            partial = None
+            expires = None
+        print("Running pattern %s" % pattern.name)
+        if db:
+            cube.clear()
+            cube.swap()
+        else:
+            cube.single_buffer()
+            cube.clear()
+        null_iteration = False
+        while True:
             try:
                 pattern.tick()
+                null_iteration = False
             except StopIteration:
-                if expires is not None and now > partial:
+                if null_iteration:
                     raise
-                continue
+                null_iteration = True
             cube.render()
             if db:
                 cube.swap()
@@ -90,8 +105,8 @@ def run_pattern(cube, pattern):
                     print("%d/%d" % (frames, int(1.0/interval)))
                 sec_tick += 1.0
                 frames = 0
-        except StopIteration:
-            return
+    except StopIteration:
+        return
 
 def sigterm_handler(_signo, _stack_frame):
     raise KeyboardInterrupt

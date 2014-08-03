@@ -9,8 +9,10 @@ import math
 
 class Pattern(object):
     def init(self):
-        self.message = 'Hello World'
-        self.saved_message = self.message
+        if self.arg is None:
+            self.message = 'Hello World'
+        else:
+            self.message = self.arg
         self.position = 0
         self.double_buffer = True
         return 0.35 / self.cube.size
@@ -18,7 +20,6 @@ class Pattern(object):
         self.cube.clear()
         if self.position == 0:
             if self.message == '':
-                self.message = self.saved_message
                 raise StopIteration
             c = self.message[0]
             self.message = self.message[1:]

@@ -15,11 +15,11 @@ class Pattern(object):
     def init(self):
         ips = subprocess.check_output(['/sbin/ip','addr'])
         regex = re.compile('inet [0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
-        self.message = ''
+        self.message = ' '
         for ip in regex.findall(ips):
             realip = ip.replace('inet ','')
             if realip != '127.0.0.1':
-                self.message += ' '+realip
+                self.message += realip + ' '
         self.saved_message = self.message
         self.position = 0
         self.double_buffer = True
@@ -29,7 +29,6 @@ class Pattern(object):
         self.cube.clear()
         if self.position == 0:
             if self.message == '':
-                self.message = self.saved_message
                 raise StopIteration
             c = self.message[0]
             self.message = self.message[1:]
