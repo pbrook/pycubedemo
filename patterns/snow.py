@@ -22,7 +22,7 @@ class Drop(object):
     def reset(self):
         self.z = self.cube.size
         self.speed = random.uniform(1, 2)
-        self.color = cubehelper.mix_color(cubehelper.random_color(), WHITE, 0.9)
+        self.color = cubehelper.mix_color(cubehelper.random_color(), WHITE, 0.7)
     def tick(self):
         self.z -= self.speed * FRAME_TIME
         if self.z >= 0:
