@@ -69,9 +69,9 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.end_headers()
         self.server.page_info.callback(self.path)
 
-def StartHTTP(title, buttons, callback):
+def StartHTTP(port, title, buttons, callback):
     actions = frozenset(itertools.chain(*buttons))
-    srv = BaseHTTPServer.HTTPServer(("0.0.0.0", 3010), RequestHandler)
+    srv = BaseHTTPServer.HTTPServer(("0.0.0.0", port), RequestHandler)
     srv.page_info = PageInfo(title, buttons, callback, actions)
     srv = thread.start_new_thread(srv.serve_forever, ())
     return srv

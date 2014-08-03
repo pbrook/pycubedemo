@@ -216,10 +216,13 @@ class Game(object):
 
 class Pattern(object):
     def init(self):
+        if self.arg is None:
+            raise StopIteration
+        port = int(self.arg)
         self.double_buffer = True
         self.game = Game(self.cube)
         buttons = [['forward'], ['left', 'fire#background-color: #ffcccc', 'right'],['back']]
-        httpinput.StartHTTP("LED Invaders", buttons, self.game.handle_action)
+        httpinput.StartHTTP(port, "LED Invaders", buttons, self.game.handle_action)
         return 0.1
 
     def tick(self):
