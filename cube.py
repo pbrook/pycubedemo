@@ -11,6 +11,7 @@ import time
 import signal
 import cubehelper
 import random
+import logging
 
 def load_patterns(cube, match):
     patterns = {}
@@ -110,6 +111,13 @@ def run_pattern(cube, pattern):
 
 def sigterm_handler(_signo, _stack_frame):
     raise KeyboardInterrupt
+
+# Set up additional logging to the console
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+consoleHandler = logging.StreamHandler()
+consoleHandler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+logger.addHandler(consoleHandler)
 
 ap = argparse.ArgumentParser(description="LED cube demo program")
 ap.add_argument('-P', '--port', type=str,
