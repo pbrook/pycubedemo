@@ -8,11 +8,12 @@ from collections import defaultdict
 
 class Pattern(object):
     def init(self):
-        self.color = cubehelper.random_color()
-
         self.pixels_lock = Lock()
         self.pixels_to_set = []
 
+        self.colors = [] # set when the welcome message is received
+
+        # TODO: make this host configurable from args input
         self.ews = EventedWebsocket("ws://localhost:47285/")
         self.ews.attach_handler('open', self.on_open)
         self.ews.attach_handler('welcome', self.on_welcome)
@@ -36,11 +37,13 @@ class Pattern(object):
         if (data["app"] != "GravityBlocks"):
             print("Error: this isn't a GravityBlocks server! We're gonna do jack all about it though because we're lazy")
         else:
+            self.colors = data["colors"]
             print("Successfully handshaken with server")
 
     def on_activate(self, data):
         with self.pixels_lock:
-            self.pixels_to_set.append((self.translate_coords(data["coords"]["x"], data["coords"]["y"]), self.color))
+            col = cubehelper.color_to_float(self.colors[data["color"]])
+            self.pixels_to_set.append((self.translate_coords(data["coords"]["x"], data["coords"]["y"]), col))
 
     def on_deactivate(self, data):
         with self.pixels_lock:
