@@ -3,18 +3,23 @@ import cubehelper
 import websocket
 import json
 import thread
+import time
 from threading import Lock
 from collections import defaultdict
 
 class Pattern(object):
     def init(self):
+        if self.arg is None:
+            print("Error: pass the address of the GravityBlocks server websocket in the format host:port")
+            time.sleep(1)
+            raise StopIteration
+
         self.pixels_lock = Lock()
         self.pixels_to_set = []
 
         self.colors = [] # set when the welcome message is received
 
-        # TODO: make this host configurable from args input
-        self.ews = EventedWebsocket("ws://localhost:47285/")
+        self.ews = EventedWebsocket("ws://%s/" % self.arg)
         self.ews.attach_handler('open', self.on_open)
         self.ews.attach_handler('welcome', self.on_welcome)
         self.ews.attach_handler('activate', self.on_activate)
