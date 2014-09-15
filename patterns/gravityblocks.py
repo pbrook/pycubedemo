@@ -4,11 +4,14 @@ import websocket
 import json
 import thread
 import time
+import copy
 from threading import Lock
 from collections import defaultdict
 
 class Pattern(object):
     def init(self):
+        self.double_buffer = True
+
         if self.arg is None:
             print("Error: pass the address of the GravityBlocks server websocket in the format host:port")
             time.sleep(1)
@@ -16,6 +19,11 @@ class Pattern(object):
 
         self.pixels_lock = Lock()
         self.pixels_to_set = []
+
+        # Define a queue of empty planes
+        black = (0.0, 0.0, 0.0)
+        sz = self.cube.size
+        self.planes = QueueList(self.cube.size, [[black for x in range(0, sz)] for y in range(0, sz)])
 
         self.colors = [] # set when the welcome message is received
 
@@ -26,13 +34,24 @@ class Pattern(object):
         self.ews.attach_handler('deactivate', self.on_deactivate)
         self.ews.connect()
 
-        return 1.0/30
+        return 1.0/15
 
     def tick(self):
+        new_plane = copy.deepcopy(self.planes[0])
+
+        # apply all requested pixel changes from the other thread to the new front plane of the cube
         with self.pixels_lock:
             for (coord, color) in self.pixels_to_set:
-                self.cube.set_pixel(coord, color)
+                new_plane[coord[0]][coord[1]] = color
             self.pixels_to_set = []
+
+        self.planes.prepend(new_plane)
+
+        # render planes to cube
+        for y, plane in enumerate(self.planes):
+            for x, row in enumerate(plane):
+                for z, color in enumerate(row):
+                    self.cube.set_pixel((x, y, z), color)
 
     def on_open(self):
         print("Connected to GravityBlocks server")
@@ -56,7 +75,7 @@ class Pattern(object):
 
     def translate_coords(self, x, y):
         """ Translate finger-coordinates (i.e. top left is 0, 0, bottom left is 0, 7) to cube front face coords """
-        return (y, 0, self.cube.size - x - 1)
+        return (y, self.cube.size - x - 1)
 
 class EventedWebsocket(object):
     def __init__(self, url):
@@ -107,3 +126,29 @@ class EventedWebsocket(object):
 
     def on_close(self, ws):
         self.run_handlers("close")
+
+class QueueList(object):
+    """Similar to a simplified deque but with O(1) random access instead of O(n)"""
+    def __init__(self, size, initVal):
+        self.size = size
+        self.contents = [initVal] * size
+        self.head_pointer = 0
+
+    def prepend(self, item):
+        """Insert an item at the start of the queue. An item will be pushed off the end of the queue."""
+        new_head_pointer = self._wrap_into_valid_range(self.head_pointer - 1)
+        self.head_pointer = new_head_pointer
+        self.contents[new_head_pointer] = item
+
+    def _wrap_into_valid_range(self, pointer):
+        """Take a pointer index and return it mapped into the valid range for the queue"""
+        return (pointer + self.size) % self.size
+
+    def __getitem__(self, index):
+        if index >= self.size:
+            raise IndexError
+
+        return self.contents[self._wrap_into_valid_range(self.head_pointer + index)]
+
+    def __len__(self):
+        return self.size
