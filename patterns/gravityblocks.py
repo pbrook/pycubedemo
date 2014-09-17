@@ -18,12 +18,21 @@ class Pattern(object):
             raise StopIteration
 
         self.pixels_lock = Lock()
-        self.pixels_to_set = []
+        self.pixels_to_set = {key: [] for key in ['top', 'front', 'left', 'right', 'back', 'bottom']}
 
-        # Define a queue of empty planes
+        # Define some queues of empty planes. Each face of the cube has a full cube's worth of planes, which are merged
+        # together when rendered
         black = (0.0, 0.0, 0.0)
         sz = self.cube.size
-        self.planes = QueueList(self.cube.size, [[black for x in range(0, sz)] for y in range(0, sz)])
+
+        self.facePlanes = {
+            'top': QueueList(self.cube.size, [[black for x in range(0, sz)] for y in range(0, sz)]),
+            'front': QueueList(self.cube.size, [[black for x in range(0, sz)] for y in range(0, sz)]),
+            'left': QueueList(self.cube.size, [[black for x in range(0, sz)] for y in range(0, sz)]),
+            'right': QueueList(self.cube.size, [[black for x in range(0, sz)] for y in range(0, sz)]),
+            'back': QueueList(self.cube.size, [[black for x in range(0, sz)] for y in range(0, sz)]),
+            'bottom': QueueList(self.cube.size, [[black for x in range(0, sz)] for y in range(0, sz)])
+        }
 
         self.colors = [] # set when the welcome message is received
 
@@ -37,18 +46,20 @@ class Pattern(object):
         return 1.0/15
 
     def tick(self):
-        new_plane = copy.deepcopy(self.planes[0])
-
-        # apply all requested pixel changes from the other thread to the new front plane of the cube
         with self.pixels_lock:
-            for (coord, color) in self.pixels_to_set:
-                new_plane[coord[0]][coord[1]] = color
-            self.pixels_to_set = []
+            for face, planes in self.facePlanes.iteritems():
+                new_plane = copy.deepcopy(planes[0])
 
-        self.planes.prepend(new_plane)
+                # apply all requested pixel changes from the other thread to the new front plane of the specified face
+                for (coord, color) in self.pixels_to_set[face]:
+                    new_plane[coord[0]][coord[1]] = color
+                self.pixels_to_set[face] = []
+
+                planes.prepend(new_plane)
 
         # render planes to cube
-        for y, plane in enumerate(self.planes):
+        # TODO: make this merge all planes. Currently just renders front plane
+        for y, plane in enumerate(self.facePlanes['front']):
             for x, row in enumerate(plane):
                 for z, color in enumerate(row):
                     self.cube.set_pixel((x, y, z), color)
@@ -67,11 +78,11 @@ class Pattern(object):
     def on_activate(self, data):
         with self.pixels_lock:
             col = cubehelper.color_to_float(self.colors[data["color"]])
-            self.pixels_to_set.append((self.translate_coords(data["coords"]["x"], data["coords"]["y"]), col))
+            self.pixels_to_set[data["face"]].append((self.translate_coords(data["coords"]["x"], data["coords"]["y"]), col))
 
     def on_deactivate(self, data):
         with self.pixels_lock:
-            self.pixels_to_set.append((self.translate_coords(data["coords"]["x"], data["coords"]["y"]), (0.0, 0.0, 0.0)))
+            self.pixels_to_set[data["face"]].append((self.translate_coords(data["coords"]["x"], data["coords"]["y"]), (0.0, 0.0, 0.0)))
 
     def translate_coords(self, x, y):
         """ Translate finger-coordinates (i.e. top left is 0, 0, bottom left is 0, 7) to cube front face coords """
