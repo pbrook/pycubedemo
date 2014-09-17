@@ -65,7 +65,7 @@ class Pattern(object):
         for y in range(0, self.cube.size):
             for x in range(0, self.cube.size):
                 for z in range(0, self.cube.size):
-                    self.cube.set_pixel((x, y, z), cubehelper.color_to_float(merged[y][x][z]))
+                    self.cube.set_pixel((x, y, z), cubehelper.color_to_float(merged[x][y][z]))
 
     def merge_planes(self, faces):
         """Take an array of faces, each of which is an array of planes, and merge them into one 3D array of pixels, taking into
@@ -190,15 +190,15 @@ class FaceHistory(object):
         if self.face == "front":
             return [x, y, z]
         elif self.face == "back":
-            return [8-x, 8-y, z]
+            return [7-x, 7-y, z]
         elif self.face == "left":
-            return [8-y, x, z]
+            return [7-y, x, z]
         elif self.face == "right":
-            return [y, 8-x, z]
+            return [y, 7-x, z]
         elif self.face == "top":
-            return [x, 8-z, y]
+            return [x, 7-z, y]
         elif self.face == "bottom":
-            return [x, z, 8-y]
+            return [x, z, 7-y]
 
     def _wrap_into_valid_range(self, pointer):
         """Take a pointer index and return it mapped into the valid range for the queue"""
