@@ -61,7 +61,6 @@ class Pattern(object):
                 planes.prepend(new_plane)
 
         # render planes to cube
-        # TODO: make this merge all planes. Currently just renders front plane
         merged = self.merge_planes(self.facePlanes)
         for y in range(0, self.cube.size):
             for x in range(0, self.cube.size):
@@ -73,9 +72,10 @@ class Pattern(object):
         account the view perspective of the original faces. This sounds mad, but yes, this does mean that each face has an
         entire cube's worth of pixels. I'll probably change this to use a particle system at some point."""
 
-        # Array to store merged colours in. 3D array with a final dimension for the R, G, B components.
+        # Array to store merged colours in. 3D array with a fourth array dimension for the R, G, B components.
         computed = numpy.empty([self.cube.size, self.cube.size, self.cube.size, 3], dtype=float)
 
+        # For each of the 6 cubes (one from each face), get the colour of the same pixel on each and merge them together
         for x in range(self.cube.size):
             for y in range(self.cube.size):
                 for z in range(self.cube.size):
@@ -179,12 +179,14 @@ class FaceHistory(object):
         self.contents[new_head_pointer] = item
 
     def get_from_front_perspective(self, x, y, z):
-        """Get an item from the cube, with the coordinates passed in from the front of the cube's perspective."""
+        """Get an item from the cube, with the coordinates passed in from the front of the cube's perspective.
+        Returns an array of R, G, B components between 0 and 255"""
         translated = self._translate_from_front_to(self.face, x, y, z)
         return self[translated[0]][translated[1]][translated[2]] 
 
     def _translate_from_front_to(self, perspective, x, y, z):
-        """Translate a coordinate passed in from the perspective of the front of the cube to the specified perspective"""
+        """Translate a coordinate passed in from the perspective of the front of the cube to the specified perspective.
+        TODO: replace hardcoded cube size with something better"""
         if self.face == "front":
             return [x, y, z]
         elif self.face == "back":
