@@ -18,6 +18,8 @@ class Pattern(object):
             time.sleep(1)
             raise StopIteration
 
+        self.MAX_PIXEL_COLOR = [255, 255, 255]
+
         self.pixels_lock = Lock()
         self.pixels_to_set = {key: [] for key in ['top', 'front', 'left', 'right', 'back', 'bottom']}
 
@@ -78,8 +80,9 @@ class Pattern(object):
             for y in range(self.cube.size):
                 for z in range(self.cube.size):
                     # Index the array with y coord at the start, to optimise outputting serial data to the cube
-                    faceColours = [f.get_from_front_perspective(x, y, z) for f in self.facePlanes]
-                    computed[y][x][z] = numpy.sum(faceColours, axis=0) # TODO do something more intelligent to merge colours rather than just adding them, which will end in tears
+                    faceColours = [f.get_from_front_perspective(x, y, z) for f in faces.values()]
+                    mixed = numpy.sum(faceColours, axis=0) # R, G, B array
+                    computed[y][x][z] = numpy.minimum(mixed, self.MAX_PIXEL_COLOR)
 
         return computed
 
