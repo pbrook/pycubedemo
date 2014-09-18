@@ -25,16 +25,13 @@ class Pattern(object):
 
         # Define some queues of empty planes. Each face of the cube has a full cube's worth of planes, which are merged
         # together when rendered
-        black = (0, 0, 0)
-        size = self.cube.size
-
         self.facePlanes = {
-            'top': FaceHistory(self.cube.size, 'top', [[black for i in range(0, size)] for j in range(0, size)]),
-            'front': FaceHistory(self.cube.size, 'front', [[black for i in range(0, size)] for j in range(0, size)]),
-            'left': FaceHistory(self.cube.size, 'left', [[black for i in range(0, size)] for j in range(0, size)]),
-            'right': FaceHistory(self.cube.size, 'right', [[black for i in range(0, size)] for j in range(0, size)]),
-            'back': FaceHistory(self.cube.size, 'back', [[black for i in range(0, size)] for j in range(0, size)]),
-            'bottom': FaceHistory(self.cube.size, 'bottom', [[black for i in range(0, size)] for j in range(0, size)])
+            'top': FaceHistory(self.cube.size, 'top'),
+            'front': FaceHistory(self.cube.size, 'front'),
+            'left': FaceHistory(self.cube.size, 'left'),
+            'right': FaceHistory(self.cube.size, 'right'),
+            'back': FaceHistory(self.cube.size, 'back'),
+            'bottom': FaceHistory(self.cube.size, 'bottom')
         }
 
         self.colors = [] # set when the welcome message is received
@@ -54,17 +51,11 @@ class Pattern(object):
             for face, planes in self.facePlanes.iteritems():
                 new_plane = copy.deepcopy(planes[0])
 
-                print("face " + face)
-                print("new plane before changes")
-                print(numpy.array_str(new_plane))
-
                 # apply all requested pixel changes from the other thread to the new front plane of the specified face
-                for (coord, color) in self.pixels_to_set[face]:
-                    new_plane[coord[0]][coord[1]] = color
+                # in this context, the plane is referred to by xz as y is the depth
+                for ((x, z), color) in self.pixels_to_set[face]:
+                    new_plane[x][z] = color
                 self.pixels_to_set[face] = []
-
-                print("new plane after changes")
-                print(numpy.array_str(new_plane))
 
                 planes.prepend(new_plane)
 
@@ -75,21 +66,18 @@ class Pattern(object):
                 for z in range(0, self.cube.size):
                     self.cube.set_pixel((x, y, z), cubehelper.color_to_float(merged[x][y][z]))
 
-        # self.cube.set_pixel((1, 2, 3), (1.0, 1.0, 1.0))
-
     def merge_planes(self, faces):
         """Take an array of faces, each of which is an array of planes, and merge them into one 3D array of pixels, taking into
         account the view perspective of the original faces. This sounds mad, but yes, this does mean that each face has an
         entire cube's worth of pixels. I'll probably change this to use a particle system at some point."""
 
         # Array to store merged colours in. 3D array with a fourth array dimension for the R, G, B components.
-        computed = numpy.empty([self.cube.size, self.cube.size, self.cube.size, 3], dtype=float)
+        computed = numpy.empty([self.cube.size, self.cube.size, self.cube.size, 3], dtype=int)
 
         # For each of the 6 cubes (one from each face), get the colour of the same pixel on each and merge them together
         for x in range(self.cube.size):
             for y in range(self.cube.size):
                 for z in range(self.cube.size):
-                    # Index the array with y coord at the start, to optimise outputting serial data to the cube
                     faceColours = [f.get_from_front_perspective(x, y, z) for f in faces.values()]
                     mixed = numpy.sum(faceColours, axis=0) # R, G, B array
                     computed[x][y][z] = numpy.minimum(mixed, self.MAX_PIXEL_COLOR)
@@ -181,10 +169,12 @@ class FaceHistory(object):
     a 3D cube made up of planes, each of which is an item in a queue. New planes can be pushed
     (prepended) to the front of the queue, pushing old items off the end."""
 
-    def __init__(self, size, face, initVal):
+    def __init__(self, size, face):
         self.size = size
         self.face = face
-        self.contents = [initVal] * size
+        # Contents are an array of planes. A 3D array was not used because it'd be hard to push new planes in.
+        # self.contents should always be accessed contents[y][x][z]
+        self.contents = [numpy.zeros([size, size, 3], dtype=int)] * self.size
         self.head_pointer = 0
 
     def prepend(self, item):
@@ -196,8 +186,9 @@ class FaceHistory(object):
     def get_from_front_perspective(self, x, y, z):
         """Get an item from the cube, with the coordinates passed in from the front of the cube's perspective.
         Returns an array of R, G, B components between 0 and 255"""
-        translated = self._translate_from_front_to(self.face, x, y, z)
-        return self[translated[0]][translated[1]][translated[2]] 
+        [trans_x, trans_y, trans_z] = self._translate_from_front_to(self.face, x, y, z)
+        # use translated y coord first, as the first index represents the plane
+        return self[trans_y][trans_x][trans_z] 
 
     def _translate_from_front_to(self, perspective, x, y, z):
         """Translate a coordinate passed in from the perspective of the front of the cube to the specified perspective.
@@ -212,14 +203,8 @@ class FaceHistory(object):
             return [y, 7-x, z]
         elif self.face == "top":
             return [x, 7-z, y]
-        elif self.face == "bottom":
+        elif self.face == "bottom": # view of the bottom as if viewing it from underneath, with the top of your head near the front of the cube
             return [x, z, 7-y]
-
-    # top in,      out
-    # 0, 0, 0      0, 7, 0
-    # 1, 1, 1      1, 6, 1
-    # 0, 3, 0      0, 7, 3
-    # 1, 2, 3      1, 4, 2
 
     def _wrap_into_valid_range(self, pointer):
         """Take a pointer index and return it mapped into the valid range for the queue"""
