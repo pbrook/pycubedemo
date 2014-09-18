@@ -46,7 +46,6 @@ class Pattern(object):
         return 1.0/15
 
     def tick(self):
-        print("tick")
         with self.pixels_lock:
             for face, planes in self.facePlanes.iteritems():
                 new_plane = copy.deepcopy(planes[0])
@@ -99,10 +98,7 @@ class Pattern(object):
     def on_activate(self, data):
         with self.pixels_lock:
             col = tuple(self.colors[data["color"]])
-            print("on_activate")
-            print("data: " + json.dumps(data))
             translated_coords = self.translate_coords(data["coords"]["x"], data["coords"]["y"])
-            print("translated: " + json.dumps(translated_coords))
             self.pixels_to_set[data["face"]].append((translated_coords, col))
 
     def on_deactivate(self, data):
@@ -203,8 +199,8 @@ class FaceHistory(object):
             return [y, 7-x, z]
         elif self.face == "top":
             return [x, 7-z, y]
-        elif self.face == "bottom": # view of the bottom as if viewing it from underneath, with the top of your head near the front of the cube
-            return [x, z, 7-y]
+        elif self.face == "bottom": # view of the bottom as if standing in front of the cube, looking through the front face at the bottom
+            return [x, z, y]
 
     def _wrap_into_valid_range(self, pointer):
         """Take a pointer index and return it mapped into the valid range for the queue"""
