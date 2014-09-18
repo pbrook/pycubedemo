@@ -26,15 +26,15 @@ class Pattern(object):
         # Define some queues of empty planes. Each face of the cube has a full cube's worth of planes, which are merged
         # together when rendered
         black = (0, 0, 0)
-        sz = self.cube.size
+        size = self.cube.size
 
         self.facePlanes = {
-            'top': FaceHistory(self.cube.size, 'top', [[black for x in range(0, sz)] for y in range(0, sz)]),
-            'front': FaceHistory(self.cube.size, 'front', [[black for x in range(0, sz)] for y in range(0, sz)]),
-            'left': FaceHistory(self.cube.size, 'left', [[black for x in range(0, sz)] for y in range(0, sz)]),
-            'right': FaceHistory(self.cube.size, 'right', [[black for x in range(0, sz)] for y in range(0, sz)]),
-            'back': FaceHistory(self.cube.size, 'back', [[black for x in range(0, sz)] for y in range(0, sz)]),
-            'bottom': FaceHistory(self.cube.size, 'bottom', [[black for x in range(0, sz)] for y in range(0, sz)])
+            'top': FaceHistory(self.cube.size, 'top', [[black for i in range(0, size)] for j in range(0, size)]),
+            'front': FaceHistory(self.cube.size, 'front', [[black for i in range(0, size)] for j in range(0, size)]),
+            'left': FaceHistory(self.cube.size, 'left', [[black for i in range(0, size)] for j in range(0, size)]),
+            'right': FaceHistory(self.cube.size, 'right', [[black for i in range(0, size)] for j in range(0, size)]),
+            'back': FaceHistory(self.cube.size, 'back', [[black for i in range(0, size)] for j in range(0, size)]),
+            'bottom': FaceHistory(self.cube.size, 'bottom', [[black for i in range(0, size)] for j in range(0, size)])
         }
 
         self.colors = [] # set when the welcome message is received
@@ -49,14 +49,22 @@ class Pattern(object):
         return 1.0/15
 
     def tick(self):
+        print("tick")
         with self.pixels_lock:
             for face, planes in self.facePlanes.iteritems():
                 new_plane = copy.deepcopy(planes[0])
+
+                print("face " + face)
+                print("new plane before changes")
+                print(numpy.array_str(new_plane))
 
                 # apply all requested pixel changes from the other thread to the new front plane of the specified face
                 for (coord, color) in self.pixels_to_set[face]:
                     new_plane[coord[0]][coord[1]] = color
                 self.pixels_to_set[face] = []
+
+                print("new plane after changes")
+                print(numpy.array_str(new_plane))
 
                 planes.prepend(new_plane)
 
@@ -66,6 +74,8 @@ class Pattern(object):
             for x in range(0, self.cube.size):
                 for z in range(0, self.cube.size):
                     self.cube.set_pixel((x, y, z), cubehelper.color_to_float(merged[x][y][z]))
+
+        # self.cube.set_pixel((1, 2, 3), (1.0, 1.0, 1.0))
 
     def merge_planes(self, faces):
         """Take an array of faces, each of which is an array of planes, and merge them into one 3D array of pixels, taking into
@@ -82,7 +92,7 @@ class Pattern(object):
                     # Index the array with y coord at the start, to optimise outputting serial data to the cube
                     faceColours = [f.get_from_front_perspective(x, y, z) for f in faces.values()]
                     mixed = numpy.sum(faceColours, axis=0) # R, G, B array
-                    computed[y][x][z] = numpy.minimum(mixed, self.MAX_PIXEL_COLOR)
+                    computed[x][y][z] = numpy.minimum(mixed, self.MAX_PIXEL_COLOR)
 
         return computed
 
@@ -101,15 +111,20 @@ class Pattern(object):
     def on_activate(self, data):
         with self.pixels_lock:
             col = tuple(self.colors[data["color"]])
-            self.pixels_to_set[data["face"]].append((self.translate_coords(data["coords"]["x"], data["coords"]["y"]), col))
+            print("on_activate")
+            print("data: " + json.dumps(data))
+            translated_coords = self.translate_coords(data["coords"]["x"], data["coords"]["y"])
+            print("translated: " + json.dumps(translated_coords))
+            self.pixels_to_set[data["face"]].append((translated_coords, col))
 
     def on_deactivate(self, data):
         with self.pixels_lock:
             self.pixels_to_set[data["face"]].append((self.translate_coords(data["coords"]["x"], data["coords"]["y"]), (0, 0, 0)))
 
     def translate_coords(self, x, y):
-        """ Translate finger-coordinates (i.e. top left is 0, 0, bottom left is 0, 7) to cube front face coords """
-        return (y, self.cube.size - x - 1)
+        """ Translate finger-coordinates (i.e. top left is 0, 0, bottom left is 0, 7) to plane coords (i.e. top left
+            is 0, 7, bottom left is 0, 0). Plane coords use x and y axes """
+        return (x, self.cube.size - y - 1)
 
 class EventedWebsocket(object):
     def __init__(self, url):
@@ -199,6 +214,12 @@ class FaceHistory(object):
             return [x, 7-z, y]
         elif self.face == "bottom":
             return [x, z, 7-y]
+
+    # top in,      out
+    # 0, 0, 0      0, 7, 0
+    # 1, 1, 1      1, 6, 1
+    # 0, 3, 0      0, 7, 3
+    # 1, 2, 3      1, 4, 2
 
     def _wrap_into_valid_range(self, pointer):
         """Take a pointer index and return it mapped into the valid range for the queue"""
