@@ -20,19 +20,10 @@ class Pattern(object):
 
         self.MAX_PIXEL_COLOR = [255, 255, 255]
 
-        self.pixels_lock = Lock()
-        self.pixels_to_set = {key: [] for key in ['top', 'front', 'left', 'right', 'back', 'bottom']}
+        self.ps = ParticleSystem(self.cube.size)
 
-        # Define some queues of empty planes. Each face of the cube has a full cube's worth of planes, which are merged
-        # together when rendered
-        self.facePlanes = {
-            'top': FaceHistory(self.cube.size, 'top'),
-            'front': FaceHistory(self.cube.size, 'front'),
-            'left': FaceHistory(self.cube.size, 'left'),
-            'right': FaceHistory(self.cube.size, 'right'),
-            'back': FaceHistory(self.cube.size, 'back'),
-            'bottom': FaceHistory(self.cube.size, 'bottom')
-        }
+        self.pixels_lock = Lock()
+        self.pixels_to_set = []
 
         self.colors = [] # set when the welcome message is received
 
@@ -40,49 +31,45 @@ class Pattern(object):
         self.ews.attach_handler('open', self.on_open)
         self.ews.attach_handler('welcome', self.on_welcome)
         self.ews.attach_handler('activate', self.on_activate)
-        self.ews.attach_handler('deactivate', self.on_deactivate)
         self.ews.connect()
 
-        return 1.0/15
+        return 1.0/20
+
+    def translate_to_3d(self, x, y, face):
+        """Translate a coordinate specified in 2D on a cube face to 3D cube coordinates"""
+        cs = self.cube.size-1
+
+        if face == 'front':
+            return [x, 0, y]
+        elif face == 'left':
+            return [0, cs-x, y]
+        elif face == 'right':
+            return [cs, x, y]
+        elif face == 'back':
+            return [cs-x, cs, y]
+        elif face == 'bottom':
+            return [x, y, 0]
+        elif face == 'top':
+            return [x, y, cs]
 
     def tick(self):
+        self.ps.tick()
+
         with self.pixels_lock:
-            for face, planes in self.facePlanes.iteritems():
-                new_plane = copy.deepcopy(planes[0])
+            for ((x, y), face, color) in self.pixels_to_set:
+                self.ps.add_new_dot_particle(
+                        coord=self.translate_to_3d(x, y, face),
+                        originating_face=face,
+                        color=color)
 
-                # apply all requested pixel changes from the other thread to the new front plane of the specified face
-                # in this context, the plane is referred to by xz as y is the depth
-                for ((x, z), color) in self.pixels_to_set[face]:
-                    new_plane[x][z] = color
-                self.pixels_to_set[face] = []
+            self.pixels_to_set = []
 
-                planes.prepend(new_plane)
+        rendered = self.ps.render()
 
-        # render planes to cube
-        merged = self.merge_planes(self.facePlanes)
-        for y in range(0, self.cube.size):
-            for x in range(0, self.cube.size):
-                for z in range(0, self.cube.size):
-                    self.cube.set_pixel((x, y, z), cubehelper.color_to_float(merged[x][y][z]))
-
-    def merge_planes(self, faces):
-        """Take an array of faces, each of which is an array of planes, and merge them into one 3D array of pixels, taking into
-        account the view perspective of the original faces. This sounds mad, but yes, this does mean that each face has an
-        entire cube's worth of pixels. I'll probably change this to use a particle system at some point."""
-
-        # Array to store merged colours in. 3D array with a fourth array dimension for the R, G, B components.
-        computed = numpy.empty([self.cube.size, self.cube.size, self.cube.size, 3], dtype=int)
-
-        # For each of the 6 cubes (one from each face), get the colour of the same pixel on each and merge them together
-        for x in range(self.cube.size):
-            for y in range(self.cube.size):
-                for z in range(self.cube.size):
-                    faceColours = [f.get_from_front_perspective(x, y, z) for f in faces.values()]
-                    mixed = numpy.sum(faceColours, axis=0) # R, G, B array
-                    computed[x][y][z] = numpy.minimum(mixed, self.MAX_PIXEL_COLOR)
-
-        return computed
-
+        for y in xrange(self.cube.size):
+            for x in xrange(self.cube.size):
+                for z in xrange(self.cube.size):
+                    self.cube.set_pixel((x, y, z), cubehelper.color_to_float(rendered[x][y][z]))
 
     def on_open(self):
         print("Connected to GravityBlocks server")
@@ -97,13 +84,9 @@ class Pattern(object):
 
     def on_activate(self, data):
         with self.pixels_lock:
-            col = tuple(self.colors[data["color"]])
+            color = self.colors[data["color"]]
             translated_coords = self.translate_coords(data["coords"]["x"], data["coords"]["y"])
-            self.pixels_to_set[data["face"]].append((translated_coords, col))
-
-    def on_deactivate(self, data):
-        with self.pixels_lock:
-            self.pixels_to_set[data["face"]].append((self.translate_coords(data["coords"]["x"], data["coords"]["y"]), (0, 0, 0)))
+            self.pixels_to_set.append((translated_coords, data["face"], color))
 
     def translate_coords(self, x, y):
         """ Translate finger-coordinates (i.e. top left is 0, 0, bottom left is 0, 7) to plane coords (i.e. top left
@@ -160,57 +143,80 @@ class EventedWebsocket(object):
     def on_close(self, ws):
         self.run_handlers("close")
 
-class FaceHistory(object):
-    """Similar to a simplified deque but with O(1) random access instead of O(n). Represents
-    a 3D cube made up of planes, each of which is an item in a queue. New planes can be pushed
-    (prepended) to the front of the queue, pushing old items off the end."""
 
-    def __init__(self, size, face):
-        self.size = size
-        self.face = face
-        # Contents are an array of planes. A 3D array was not used because it'd be hard to push new planes in.
-        # self.contents should always be accessed contents[y][x][z]
-        self.contents = [numpy.zeros([size, size, 3], dtype=int)] * self.size
-        self.head_pointer = 0
+class ParticleSystem(object):
+    def __init__(self, cube_size):
+        self.cube_size = cube_size
+        self.particles = []
+        self.framebuffer = numpy.zeros([cube_size, cube_size, cube_size, 3], dtype=int)
 
-    def prepend(self, item):
-        """Insert an item at the start of the queue. An item will be pushed off the end of the queue."""
-        new_head_pointer = self._wrap_into_valid_range(self.head_pointer - 1)
-        self.head_pointer = new_head_pointer
-        self.contents[new_head_pointer] = item
+        # Unit vectors for particle movement AWAY from the named face of the cube
+        self.directions = {
+            'front': [0, 1, 0],
+            'left': [1, 0, 0],
+            'right': [-1, 0, 0],
+            'back': [0, -1, 0],
+            'top': [0, 0, -1],
+            'bottom': [0, 0, 1]
+        }
 
-    def get_from_front_perspective(self, x, y, z):
-        """Get an item from the cube, with the coordinates passed in from the front of the cube's perspective.
-        Returns an array of R, G, B components between 0 and 255"""
-        [trans_x, trans_y, trans_z] = self._translate_from_front_to(self.face, x, y, z)
-        # use translated y coord first, as the first index represents the plane
-        return self[trans_y][trans_x][trans_z] 
+    def tick(self):
+        for particle in self.particles:
+            particle.tick()
 
-    def _translate_from_front_to(self, perspective, x, y, z):
-        """Translate a coordinate passed in from the perspective of the front of the cube to the specified perspective.
-        TODO: replace hardcoded cube size with something better"""
-        if self.face == "front":
-            return [x, y, z]
-        elif self.face == "back":
-            return [7-x, 7-y, z]
-        elif self.face == "left":
-            return [7-y, x, z]
-        elif self.face == "right":
-            return [y, 7-x, z]
-        elif self.face == "top":
-            return [x, 7-z, y]
-        elif self.face == "bottom": # view of the bottom as if standing in front of the cube, looking through the front face at the bottom
-            return [x, z, y]
+        # get rid of dead particles
+        self.particles[:] = [p for p in self.particles if p.dead == False]
 
-    def _wrap_into_valid_range(self, pointer):
-        """Take a pointer index and return it mapped into the valid range for the queue"""
-        return (pointer + self.size) % self.size
+    def render(self):
+        # decay the framebuffer (make it slightly dimmer)
+        for x in xrange(self.cube_size):
+            for y in xrange(self.cube_size):
+                for z in xrange(self.cube_size):
+                    self.framebuffer[x][y][z][0] = max(self.framebuffer[x][y][z][0] - 70, 0) # ensure it can't be less than 0
+                    self.framebuffer[x][y][z][1] = max(self.framebuffer[x][y][z][1] - 70, 0)
+                    self.framebuffer[x][y][z][2] = max(self.framebuffer[x][y][z][2] - 70, 0)
 
-    def __getitem__(self, index):
-        if index >= self.size:
-            raise IndexError
+        # draw the new locations of the particles
+        for particle in self.particles:
+            particle.draw(self.framebuffer)
 
-        return self.contents[self._wrap_into_valid_range(self.head_pointer + index)]
+        return self.framebuffer
 
-    def __len__(self):
-        return self.size
+    def get_particle(self):
+        """Return a new particle."""
+        return DotParticle(self.cube_size)
+
+    def add_new_dot_particle(self, coord, originating_face, color):
+        new_particle = self.get_particle()
+        new_particle.init(coord, self.directions[originating_face], color)
+        self.particles.append(new_particle)
+
+
+class DotParticle(object):
+    MAX_PIXEL_COLOR = numpy.array([255, 255, 255])
+
+    def __init__(self, cube_size):
+        self.cube_size = cube_size
+
+    def init(self, location, velocity, color):
+        self.location = numpy.array(location)
+        self.velocity = numpy.array(velocity)
+        self.color = numpy.array(color)
+        self.dead = False # set to true when the particle goes outside the bounds of the cube
+        self.immune = self._is_out_of_bounds() # immune from dying. Used when spawning a particle outside the bounds of the cube
+
+    def tick(self):
+        self.location += self.velocity
+        oob = self._is_out_of_bounds()
+        if oob and not self.immune:
+            self.dead = True
+        elif not oob:
+            self.immune = False
+
+    def draw(self, framebuffer):
+        """Draw this particle onto the passed-in framebuffer"""
+        x, y, z = self.location
+        framebuffer[x][y][z] = numpy.minimum(numpy.add(framebuffer[x][y][z], self.color), DotParticle.MAX_PIXEL_COLOR)
+
+    def _is_out_of_bounds(self):
+        return bool([l for l in self.location if l >= self.cube_size or l < 0])
