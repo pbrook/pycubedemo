@@ -6,6 +6,7 @@ import thread
 import time
 import copy
 import numpy
+import pygame
 from threading import Lock
 from collections import defaultdict
 
@@ -20,6 +21,9 @@ class Pattern(object):
 
         self.MAX_PIXEL_COLOR = [255, 255, 255]
 
+        pygame.init()
+        pygame.mixer.init()
+
         self.ps = ParticleSystem(self.cube.size)
 
         self.pixels_lock = Lock()
@@ -33,24 +37,7 @@ class Pattern(object):
         self.ews.attach_handler('activate', self.on_activate)
         self.ews.connect()
 
-        return 1.0/20
-
-    def translate_to_3d(self, x, y, face):
-        """Translate a coordinate specified in 2D on a cube face to 3D cube coordinates"""
-        cs = self.cube.size-1
-
-        if face == 'front':
-            return [x, 0, y]
-        elif face == 'left':
-            return [0, cs-x, y]
-        elif face == 'right':
-            return [cs, x, y]
-        elif face == 'back':
-            return [cs-x, cs, y]
-        elif face == 'bottom':
-            return [x, y, 0]
-        elif face == 'top':
-            return [x, y, cs]
+        return 1.0/15
 
     def tick(self):
         self.ps.tick()
@@ -58,7 +45,7 @@ class Pattern(object):
         with self.pixels_lock:
             for ((x, y), face, color) in self.pixels_to_set:
                 self.ps.add_new_dot_particle(
-                        coord=self.translate_to_3d(x, y, face),
+                        coord_xy=(x, y),
                         originating_face=face,
                         color=color)
 
@@ -150,6 +137,8 @@ class ParticleSystem(object):
         self.particles = []
         self.framebuffer = numpy.zeros([cube_size, cube_size, cube_size, 3], dtype=int)
 
+        self.sound = pygame.mixer.Sound('patterns/gravityblocks-data/harp-a.wav')
+
         # Unit vectors for particle movement AWAY from the named face of the cube
         self.directions = {
             'front': [0, 1, 0],
@@ -182,14 +171,37 @@ class ParticleSystem(object):
 
         return self.framebuffer
 
-    def get_particle(self):
-        """Return a new particle."""
-        return DotParticle(self.cube_size)
+    def add_new_dot_particle(self, coord_xy, originating_face, color):
+        new_particle = DotParticle(self.cube_size)
 
-    def add_new_dot_particle(self, coord, originating_face, color):
-        new_particle = self.get_particle()
+        # translate the xy coordinate on the originating face to a cube 3D coordinate
+        x, y = coord_xy
+        coord = self.translate_to_3d(x, y, originating_face)
+
         new_particle.init(coord, self.directions[originating_face], color)
+        new_particle.set_wall_collision_callback(self.dot_wall_collide)
         self.particles.append(new_particle)
+
+    def dot_wall_collide(self, coordinate):
+        print "Wall collision"
+        self.sound.play()
+
+    def translate_to_3d(self, x, y, face):
+        """Translate a coordinate specified in 2D on a cube face to 3D cube coordinates"""
+        cs = self.cube_size-1
+
+        if face == 'front':
+            return [x, 0, y]
+        elif face == 'left':
+            return [0, cs-x, y]
+        elif face == 'right':
+            return [cs, x, y]
+        elif face == 'back':
+            return [cs-x, cs, y]
+        elif face == 'bottom':
+            return [x, y, 0]
+        elif face == 'top':
+            return [x, y, cs]
 
 
 class DotParticle(object):
@@ -204,14 +216,29 @@ class DotParticle(object):
         self.color = numpy.array(color)
         self.dead = False # set to true when the particle goes outside the bounds of the cube
         self.immune = self._is_out_of_bounds() # immune from dying. Used when spawning a particle outside the bounds of the cube
+        self.wall_collision_callback = None
+
+    def set_wall_collision_callback(self, callback):
+        """This callback gets called when a particle hits the edge of the cube"""
+        self.wall_collision_callback = callback
 
     def tick(self):
+        old_location = numpy.copy(self.location)
         self.location += self.velocity
+
         oob = self._is_out_of_bounds()
         if oob and not self.immune:
             self.dead = True
         elif not oob:
             self.immune = False
+
+        # Check to see if the particle has collided with the cube wall.
+        # We can test for this by checking if any of the coordinate components are now on the cube wall, but weren't before.
+        if ((self.location[0] != old_location[0] and (self.location[0] == 0 or self.location[0] == self.cube_size-1)) or
+            (self.location[1] != old_location[1] and (self.location[1] == 0 or self.location[1] == self.cube_size-1)) or
+            (self.location[2] != old_location[2] and (self.location[2] == 0 or self.location[2] == self.cube_size-1))):
+            if self.wall_collision_callback:
+                self.wall_collision_callback(self.location)
 
     def draw(self, framebuffer):
         """Draw this particle onto the passed-in framebuffer"""
