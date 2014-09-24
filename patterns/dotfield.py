@@ -45,11 +45,12 @@ class Pattern(object):
         self.ps.tick()
 
         with self.pixels_lock:
-            for ((x, y), face, color) in self.pixels_to_set:
+            for ((x, y), face, startColor, endColor) in self.pixels_to_set:
                 self.ps.add_new_dot_particle(
                         coord_xy=(x, y),
                         originating_face=face,
-                        color=color)
+                        start_color=startColor,
+                        end_color=endColor)
 
             self.pixels_to_set = []
 
@@ -73,10 +74,11 @@ class Pattern(object):
 
     def on_activate(self, data):
         with self.pixels_lock:
-            color = self.colors[data["color"]]
             self.sound.play()
+            startColor = self.colors[data["startColorIndex"]]
+            endColor = self.colors[data["endColorIndex"]]
             translated_coords = self.translate_coords(data["coords"]["x"], data["coords"]["y"])
-            self.pixels_to_set.append((translated_coords, data["face"], color))
+            self.pixels_to_set.append((translated_coords, data["face"], startColor, endColor))
 
     def translate_coords(self, x, y):
         """ Translate finger-coordinates (i.e. top left is 0, 0, bottom left is 0, 7) to plane coords (i.e. top left
@@ -142,12 +144,12 @@ class ParticleSystem(object):
 
         # Unit vectors for particle movement AWAY from the named face of the cube
         self.directions = {
-            'front': [0, 1, 0],
-            'left': [1, 0, 0],
-            'right': [-1, 0, 0],
-            'back': [0, -1, 0],
-            'top': [0, 0, -1],
-            'bottom': [0, 0, 1]
+            'front': numpy.array([0, 1, 0]),
+            'left': numpy.array([1, 0, 0]),
+            'right': numpy.array([-1, 0, 0]),
+            'back': numpy.array([0, -1, 0]),
+            'top': numpy.array([0, 0, -1]),
+            'bottom': numpy.array([0, 0, 1])
         }
 
     def tick(self):
@@ -158,13 +160,14 @@ class ParticleSystem(object):
         self.particles[:] = [p for p in self.particles if p.dead == False]
 
     def render(self):
+        self.framebuffer = numpy.zeros([self.cube_size, self.cube_size, self.cube_size, 3], dtype=float)
         # decay the framebuffer (make it slightly dimmer)
-        for x in xrange(self.cube_size):
-            for y in xrange(self.cube_size):
-                for z in xrange(self.cube_size):
-                    self.framebuffer[x][y][z][0] = max(self.framebuffer[x][y][z][0] - 70, 0) # ensure it can't be less than 0
-                    self.framebuffer[x][y][z][1] = max(self.framebuffer[x][y][z][1] - 70, 0)
-                    self.framebuffer[x][y][z][2] = max(self.framebuffer[x][y][z][2] - 70, 0)
+        # for x in xrange(self.cube_size):
+            # for y in xrange(self.cube_size):
+                # for z in xrange(self.cube_size):
+                    # self.framebuffer[x][y][z][0] = max(self.framebuffer[x][y][z][0] - 70, 0) # ensure it can't be less than 0
+                    # self.framebuffer[x][y][z][1] = max(self.framebuffer[x][y][z][1] - 70, 0)
+                    # self.framebuffer[x][y][z][2] = max(self.framebuffer[x][y][z][2] - 70, 0)
 
         # draw the new locations of the particles
         for particle in self.particles:
@@ -172,15 +175,44 @@ class ParticleSystem(object):
 
         return self.framebuffer
 
-    def add_new_dot_particle(self, coord_xy, originating_face, color):
-        new_particle = DotParticle(self.cube_size)
-
+    def add_new_dot_particle(self, coord_xy, originating_face, start_color, end_color):
         # translate the xy coordinate on the originating face to a cube 3D coordinate
         x, y = coord_xy
-        coord = self.translate_to_3d(x, y, originating_face)
+        coord = numpy.array(self.translate_to_3d(x, y, originating_face))
 
-        new_particle.init(coord, self.directions[originating_face], color)
-        self.particles.append(new_particle)
+        end_color = cubehelper.color_to_float(end_color)
+
+        # create some particles: one is the head of the trail, and the rest trailing behind.
+        # for the trailing particles, transform the coordinate so the coords are behind the head
+        inverse_direction = self.directions[originating_face] * -1
+
+        # head particle
+        particle_head = DotParticle(self.cube_size)
+        particle_head.init(coord, self.directions[originating_face], cubehelper.color_to_float(start_color))
+        self.particles.append(particle_head)
+
+        # trail part 1
+        particle_trail1 = DotParticle(self.cube_size)
+        color = numpy.array(cubehelper.mix_color(start_color, end_color, 0.25)) * 0.7
+        particle_trail1.init(coord + inverse_direction, self.directions[originating_face], color)
+        self.particles.append(particle_trail1)
+
+        # trail part 2
+        particle_trail2 = DotParticle(self.cube_size)
+        color = numpy.array(cubehelper.mix_color(start_color, end_color, 0.5)) * 0.5
+        particle_trail2.init(coord + inverse_direction*2, self.directions[originating_face], color)
+        self.particles.append(particle_trail2)
+
+        # trail part 3
+        particle_trail3 = DotParticle(self.cube_size)
+        color = numpy.array(cubehelper.mix_color(start_color, end_color, 0.75)) * 0.3
+        particle_trail3.init(coord + inverse_direction*3, self.directions[originating_face], color)
+        self.particles.append(particle_trail3)
+
+        # trail part 4
+        particle_trail4 = DotParticle(self.cube_size)
+        particle_trail4.init(coord + inverse_direction*4, self.directions[originating_face], numpy.array(end_color) * 0.1)
+        self.particles.append(particle_trail4)
 
     def dot_wall_collide(self, coordinate):
         print "Wall collision"
@@ -204,7 +236,7 @@ class ParticleSystem(object):
 
 
 class DotParticle(object):
-    MAX_PIXEL_COLOR = numpy.array([255, 255, 255])
+    MAX_PIXEL_COLOR = numpy.array([1.0, 1.0, 1.0])
 
     def __init__(self, cube_size):
         self.cube_size = cube_size
@@ -212,7 +244,7 @@ class DotParticle(object):
     def init(self, location, velocity, color):
         self.location = numpy.array(location)
         self.velocity = numpy.array(velocity)
-        self.color = numpy.array(color)
+        self.color = numpy.array(color) # array RGB float colours (0-1)
         self.dead = False # set to true when the particle goes outside the bounds of the cube
         self.immune = self._is_out_of_bounds() # immune from dying. Used when spawning a particle outside the bounds of the cube
         self.wall_collision_callback = None
@@ -241,8 +273,9 @@ class DotParticle(object):
 
     def draw(self, framebuffer):
         """Draw this particle onto the passed-in framebuffer"""
-        x, y, z = self.location
-        framebuffer[x][y][z] = numpy.minimum(numpy.add(framebuffer[x][y][z], self.color), DotParticle.MAX_PIXEL_COLOR)
+        if not self._is_out_of_bounds():
+            x, y, z = self.location
+            framebuffer[x][y][z] = numpy.minimum(numpy.add(framebuffer[x][y][z], self.color), DotParticle.MAX_PIXEL_COLOR)
 
     def _is_out_of_bounds(self):
         return bool([l for l in self.location if l >= self.cube_size or l < 0])
