@@ -24,6 +24,8 @@ class Pattern(object):
         pygame.init()
         pygame.mixer.init()
 
+        self.sound = pygame.mixer.Sound('patterns/gravityblocks-data/harp-a.wav')
+
         self.ps = ParticleSystem(self.cube.size)
 
         self.pixels_lock = Lock()
@@ -72,6 +74,7 @@ class Pattern(object):
     def on_activate(self, data):
         with self.pixels_lock:
             color = self.colors[data["color"]]
+            self.sound.play()
             translated_coords = self.translate_coords(data["coords"]["x"], data["coords"]["y"])
             self.pixels_to_set.append((translated_coords, data["face"], color))
 
@@ -137,8 +140,6 @@ class ParticleSystem(object):
         self.particles = []
         self.framebuffer = numpy.zeros([cube_size, cube_size, cube_size, 3], dtype=int)
 
-        self.sound = pygame.mixer.Sound('patterns/gravityblocks-data/harp-a.wav')
-
         # Unit vectors for particle movement AWAY from the named face of the cube
         self.directions = {
             'front': [0, 1, 0],
@@ -179,12 +180,10 @@ class ParticleSystem(object):
         coord = self.translate_to_3d(x, y, originating_face)
 
         new_particle.init(coord, self.directions[originating_face], color)
-        new_particle.set_wall_collision_callback(self.dot_wall_collide)
         self.particles.append(new_particle)
 
     def dot_wall_collide(self, coordinate):
         print "Wall collision"
-        self.sound.play()
 
     def translate_to_3d(self, x, y, face):
         """Translate a coordinate specified in 2D on a cube face to 3D cube coordinates"""
