@@ -15,7 +15,7 @@ class Pattern(object):
         self.double_buffer = True
 
         if self.arg is None:
-            print("Error: pass the address of the GravityBlocks server websocket in the format host:port")
+            print("Error: pass the address of the DotField server websocket in the format host:port")
             time.sleep(1)
             raise StopIteration
 
@@ -24,7 +24,7 @@ class Pattern(object):
         pygame.init()
         pygame.mixer.init()
 
-        self.sound = pygame.mixer.Sound('patterns/gravityblocks-data/harp-a.wav')
+        self.sound = pygame.mixer.Sound('patterns/dotfield-data/harp-a.wav')
 
         self.ps = ParticleSystem(self.cube.size)
 
@@ -61,12 +61,12 @@ class Pattern(object):
                     self.cube.set_pixel((x, y, z), cubehelper.color_to_float(rendered[x][y][z]))
 
     def on_open(self):
-        print("Connected to GravityBlocks server")
+        print("Connected to DotField server")
         self.ews.emit("hello")
 
     def on_welcome(self, data):
-        if (data["app"] != "GravityBlocks"):
-            print("Error: this isn't a GravityBlocks server! We're gonna do jack all about it though because we're lazy")
+        if (data["app"] != "DotField"):
+            print("Error: this isn't a DotField server! We're gonna do jack all about it though because we're lazy")
         else:
             self.colors = data["colors"]
             print("Successfully handshaken with server")
