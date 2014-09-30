@@ -7,6 +7,7 @@ import time
 import copy
 import numpy
 import pygame
+import itertools
 from threading import Lock
 from collections import defaultdict
 
@@ -27,6 +28,9 @@ class Pattern(object):
         self.sound = pygame.mixer.Sound('patterns/dotfield-data/harp-a.wav')
 
         self.ps = ParticleSystem(self.cube.size)
+        self.ps.set_collision_callback(self.particle_collision_handler)
+
+        self.collision_counter = 0
 
         self.pixels_lock = Lock()
         self.pixels_to_set = []
@@ -61,6 +65,12 @@ class Pattern(object):
                 for z in xrange(self.cube.size):
                     self.cube.set_pixel((x, y, z), cubehelper.color_to_float(rendered[x][y][z]))
 
+    def particle_collision_handler(self, coordinate):
+        """Handle a particle collision. coordinate is the x, y, z of the cell where the particles collided"""
+        print "Collision " + str(self.collision_counter)
+        self.collision_counter += 1
+        self.sound.play()
+
     def on_open(self):
         print("Connected to DotField server")
         self.ews.emit("hello")
@@ -74,7 +84,7 @@ class Pattern(object):
 
     def on_activate(self, data):
         with self.pixels_lock:
-            self.sound.play()
+            # self.sound.play()
             startColor = self.colors[data["startColorIndex"]]
             endColor = self.colors[data["endColorIndex"]]
             translated_coords = self.translate_coords(data["coords"]["x"], data["coords"]["y"])
@@ -139,7 +149,7 @@ class EventedWebsocket(object):
 class ParticleSystem(object):
     def __init__(self, cube_size):
         self.cube_size = cube_size
-        self.particles = []
+        self.clear_particles()
         self.framebuffer = numpy.zeros([cube_size, cube_size, cube_size, 3], dtype=int)
 
         # Unit vectors for particle movement AWAY from the named face of the cube
@@ -153,17 +163,39 @@ class ParticleSystem(object):
         }
 
     def tick(self):
-        for particle in self.particles:
+        # Update each particle and move it into its new location
+        ticked_particles = []
+        for particle in self.get_particles():
             particle.tick()
+            ticked_particles.append(particle)
 
-        # get rid of dead particles
-        self.particles[:] = [p for p in self.particles if p.dead == False]
+        self.clear_particles()
+        for particle in ticked_particles:
+            self.store_particle(particle)
+
+        # get rid of dead particles and check for collisions
+        for x in xrange(self.cube_size):
+            for y in xrange(self.cube_size):
+                for z in xrange(self.cube_size):
+                    self.particles[x][y][z][:] = [p for p in self.particles[x][y][z] if p.dead == False]
+
+                    if self.collision_callback and len(self.particles[x][y][z]) > 1:
+                        # a collision may have happened. We only define a collision as between one or more
+                        # trail heads and another particle, so check
+                        if len([p for p in self.particles[x][y][z] if p.is_head == True]) >= 1:
+                            # check every pair of particles to see if they collide (based on conditions)
+                            for p1, p2 in itertools.combinations(self.particles[x][y][z], 2):
+                                if p1.collides_with(p2):
+                                    self.collision_callback((x, y, z))
+
+    def set_collision_callback(self, callback):
+        self.collision_callback = callback
 
     def render(self):
         self.framebuffer = numpy.zeros([self.cube_size, self.cube_size, self.cube_size, 3], dtype=float)
 
         # draw the particles onto the framebuffer
-        for particle in self.particles:
+        for particle in self.get_particles():
             particle.draw(self.framebuffer)
 
         return self.framebuffer
@@ -181,31 +213,55 @@ class ParticleSystem(object):
 
         # head particle
         particle_head = DotParticle(self.cube_size)
-        particle_head.init(coord, self.directions[originating_face], cubehelper.color_to_float(start_color))
-        self.particles.append(particle_head)
+        particle_head.init(coord, self.directions[originating_face], cubehelper.color_to_float(start_color), True)
+        self.store_particle(particle_head)
 
         # trail part 1
         particle_trail1 = DotParticle(self.cube_size)
         color = numpy.array(cubehelper.mix_color(start_color, end_color, 0.25)) * 0.7
-        particle_trail1.init(coord + inverse_direction, self.directions[originating_face], color)
-        self.particles.append(particle_trail1)
+        particle_trail1.init(coord + inverse_direction, self.directions[originating_face], color, False)
+        self.store_particle(particle_trail1)
 
         # trail part 2
         particle_trail2 = DotParticle(self.cube_size)
         color = numpy.array(cubehelper.mix_color(start_color, end_color, 0.5)) * 0.5
-        particle_trail2.init(coord + inverse_direction*2, self.directions[originating_face], color)
-        self.particles.append(particle_trail2)
+        particle_trail2.init(coord + inverse_direction*2, self.directions[originating_face], color, False)
+        self.store_particle(particle_trail2)
 
         # trail part 3
         particle_trail3 = DotParticle(self.cube_size)
         color = numpy.array(cubehelper.mix_color(start_color, end_color, 0.75)) * 0.3
-        particle_trail3.init(coord + inverse_direction*3, self.directions[originating_face], color)
-        self.particles.append(particle_trail3)
+        particle_trail3.init(coord + inverse_direction*3, self.directions[originating_face], color, False)
+        self.store_particle(particle_trail3)
 
         # trail part 4
         particle_trail4 = DotParticle(self.cube_size)
-        particle_trail4.init(coord + inverse_direction*4, self.directions[originating_face], numpy.array(end_color) * 0.1)
-        self.particles.append(particle_trail4)
+        particle_trail4.init(coord + inverse_direction*4, self.directions[originating_face], numpy.array(end_color) * 0.1, False)
+        self.store_particle(particle_trail4)
+
+    def clear_particles(self):
+        self.particles = [[[[] for o in xrange(self.cube_size)] for n in xrange(self.cube_size)] for m in xrange(self.cube_size)]
+        self.oob_particles = [] # out-of-bounds particles (particles outside the cube)
+
+    def get_particles(self):
+        """Generator to iterate over all stored particles"""
+        for x in xrange(self.cube_size):
+            for y in xrange(self.cube_size):
+                for z in xrange(self.cube_size):
+                    for p in self.particles[x][y][z]:
+                        yield p
+
+        for particle in self.oob_particles:
+            yield particle
+
+    def store_particle(self, particle):
+        """Insert the specified particle into a bucket corresponding to its location"""
+        if particle.is_out_of_bounds():
+            self.oob_particles.append(particle)
+            return
+
+        x, y, z = particle.location
+        self.particles[x][y][z].append(particle)
 
     def dot_wall_collide(self, coordinate):
         print "Wall collision"
@@ -234,23 +290,31 @@ class DotParticle(object):
     def __init__(self, cube_size):
         self.cube_size = cube_size
 
-    def init(self, location, velocity, color):
+    def init(self, location, velocity, color, is_head):
         self.location = numpy.array(location)
         self.velocity = numpy.array(velocity)
         self.color = numpy.array(color) # array RGB float colours (0-1)
+        self.is_head = is_head # is this particle the head of the trail?
         self.dead = False # set to true when the particle goes outside the bounds of the cube
-        self.immune = self._is_out_of_bounds() # immune from dying. Used when spawning a particle outside the bounds of the cube
+        self.immune = self.is_out_of_bounds() # immune from dying. Used when spawning a particle outside the bounds of the cube
         self.wall_collision_callback = None
 
     def set_wall_collision_callback(self, callback):
         """This callback gets called when a particle hits the edge of the cube"""
         self.wall_collision_callback = callback
 
+    def collides_with(self, other_particle):
+        """Does the current particle collide with the other particle? This assumes you have ALREADY checked they're in the same location"""
+        if not self.is_head and not other_particle.is_head:
+            return False
+
+        return not numpy.array_equal(self.velocity, other_particle.velocity)
+
     def tick(self):
         old_location = numpy.copy(self.location)
         self.location += self.velocity
 
-        oob = self._is_out_of_bounds()
+        oob = self.is_out_of_bounds()
         if oob and not self.immune:
             self.dead = True
         elif not oob:
@@ -266,9 +330,9 @@ class DotParticle(object):
 
     def draw(self, framebuffer):
         """Draw this particle onto the passed-in framebuffer"""
-        if not self._is_out_of_bounds():
+        if not self.is_out_of_bounds():
             x, y, z = self.location
             framebuffer[x][y][z] = numpy.minimum(numpy.add(framebuffer[x][y][z], self.color), DotParticle.MAX_PIXEL_COLOR)
 
-    def _is_out_of_bounds(self):
+    def is_out_of_bounds(self):
         return bool([l for l in self.location if l >= self.cube_size or l < 0])
