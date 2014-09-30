@@ -149,8 +149,12 @@ class EventedWebsocket(object):
 class ParticleSystem(object):
     def __init__(self, cube_size):
         self.cube_size = cube_size
-        self.clear_particles()
         self.framebuffer = numpy.zeros([cube_size, cube_size, cube_size, 3], dtype=int)
+
+        self.particles = numpy.empty([cube_size, cube_size, cube_size], dtype=object)
+        self.oob_particles = []
+
+        self.clear_particles()
 
         # Unit vectors for particle movement AWAY from the named face of the cube
         self.directions = {
@@ -167,7 +171,8 @@ class ParticleSystem(object):
         ticked_particles = []
         for particle in self.get_particles():
             particle.tick()
-            ticked_particles.append(particle)
+            if not particle.dead:
+                ticked_particles.append(particle)
 
         self.clear_particles()
         for particle in ticked_particles:
@@ -177,14 +182,15 @@ class ParticleSystem(object):
         for x in xrange(self.cube_size):
             for y in xrange(self.cube_size):
                 for z in xrange(self.cube_size):
-                    self.particles[x][y][z][:] = [p for p in self.particles[x][y][z] if p.dead == False]
+                    current_bucket = self.particles[x][y][z]
 
-                    if self.collision_callback and len(self.particles[x][y][z]) > 1:
+                    if self.collision_callback and len(current_bucket) > 1:
                         # a collision may have happened. We only define a collision as between one or more
                         # trail heads and another particle, so check
-                        if len([p for p in self.particles[x][y][z] if p.is_head == True]) >= 1:
+
+                        if any(p.is_head for p in current_bucket):
                             # check every pair of particles to see if they collide (based on conditions)
-                            for p1, p2 in itertools.combinations(self.particles[x][y][z], 2):
+                            for p1, p2 in itertools.combinations(current_bucket, 2):
                                 if p1.collides_with(p2):
                                     self.collision_callback((x, y, z))
 
@@ -240,8 +246,12 @@ class ParticleSystem(object):
         self.store_particle(particle_trail4)
 
     def clear_particles(self):
-        self.particles = [[[[] for o in xrange(self.cube_size)] for n in xrange(self.cube_size)] for m in xrange(self.cube_size)]
-        self.oob_particles = [] # out-of-bounds particles (particles outside the cube)
+        for x in xrange(self.cube_size):
+            for y in xrange(self.cube_size):
+                for z in xrange(self.cube_size):
+                    self.particles[x][y][z] = []
+
+        self.oob_particles[:] = [] # out-of-bounds particles (particles outside the cube)
 
     def get_particles(self):
         """Generator to iterate over all stored particles"""
@@ -322,10 +332,10 @@ class DotParticle(object):
 
         # Check to see if the particle has collided with the cube wall.
         # We can test for this by checking if any of the coordinate components are now on the cube wall, but weren't before.
-        if ((self.location[0] != old_location[0] and (self.location[0] == 0 or self.location[0] == self.cube_size-1)) or
-            (self.location[1] != old_location[1] and (self.location[1] == 0 or self.location[1] == self.cube_size-1)) or
-            (self.location[2] != old_location[2] and (self.location[2] == 0 or self.location[2] == self.cube_size-1))):
-            if self.wall_collision_callback:
+        if self.wall_collision_callback:
+            if ((self.location[0] != old_location[0] and (self.location[0] == 0 or self.location[0] == self.cube_size-1)) or
+                    (self.location[1] != old_location[1] and (self.location[1] == 0 or self.location[1] == self.cube_size-1)) or
+                    (self.location[2] != old_location[2] and (self.location[2] == 0 or self.location[2] == self.cube_size-1))):
                 self.wall_collision_callback(self.location)
 
     def draw(self, framebuffer):
@@ -335,4 +345,8 @@ class DotParticle(object):
             framebuffer[x][y][z] = numpy.minimum(numpy.add(framebuffer[x][y][z], self.color), DotParticle.MAX_PIXEL_COLOR)
 
     def is_out_of_bounds(self):
-        return bool([l for l in self.location if l >= self.cube_size or l < 0])
+        for l in self.location:
+            if l < 0 or l >= self.cube_size:
+                return True
+        
+        return False
