@@ -46,3 +46,4 @@ class Pattern(object):
                 self.plot(x, y, z, self.color[0])
                 if self.n > 1:
                     self.plot(x, y, (self.cube.size - 1) - z, self.color[1])
+        raise StopIteration

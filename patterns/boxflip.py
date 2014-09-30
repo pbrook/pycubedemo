@@ -5,6 +5,9 @@
 import cubehelper
 import random
 
+DT = 1.0/20
+SPEED = 1.0/5.0
+
 class Pattern(object):
     def init(self):
         self.axis0 = 0
@@ -13,11 +16,11 @@ class Pattern(object):
         self.mirror0 = False
         self.mirror1 = False
         self.offset = 0.0
-        self.delta = 0.1
+        self.delta = DT * 2.0 * float(self.cube.size) * SPEED
         self.color = self.pick_color()
         self.next_color = self.pick_color()
         self.double_buffer = True
-        return 0.03
+        return DT
     def pick_color(self):
         if self.cube.color:
             return cubehelper.random_color()

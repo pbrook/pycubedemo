@@ -32,6 +32,7 @@ class Pattern(object):
         self.offset -= DT / 1.0
         if self.offset < 0:
             self.offset += 1.0
+            raise StopIteration
         sz = self.cube.size
         scale = math.pi * 2.0 / float(sz)
         offset = 0.5

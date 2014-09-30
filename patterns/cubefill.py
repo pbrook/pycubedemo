@@ -55,6 +55,7 @@ class Pattern(object):
             self.offset = 0
             self.corner = self.corners[random.randrange(0, 8)]
             self.filling_color = cubehelper.random_color(self.filling_color)
+            raise StopIteration
         else:
             self.offset += 1
 
