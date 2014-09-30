@@ -161,15 +161,8 @@ class ParticleSystem(object):
 
     def render(self):
         self.framebuffer = numpy.zeros([self.cube_size, self.cube_size, self.cube_size, 3], dtype=float)
-        # decay the framebuffer (make it slightly dimmer)
-        # for x in xrange(self.cube_size):
-            # for y in xrange(self.cube_size):
-                # for z in xrange(self.cube_size):
-                    # self.framebuffer[x][y][z][0] = max(self.framebuffer[x][y][z][0] - 70, 0) # ensure it can't be less than 0
-                    # self.framebuffer[x][y][z][1] = max(self.framebuffer[x][y][z][1] - 70, 0)
-                    # self.framebuffer[x][y][z][2] = max(self.framebuffer[x][y][z][2] - 70, 0)
 
-        # draw the new locations of the particles
+        # draw the particles onto the framebuffer
         for particle in self.particles:
             particle.draw(self.framebuffer)
 
