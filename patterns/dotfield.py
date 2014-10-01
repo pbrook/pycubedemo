@@ -58,7 +58,7 @@ class Pattern(object):
 
         with self.pixels_lock:
             for ((x, y), face, startColor, endColor) in self.pixels_to_set:
-                self.ps.add_new_dot_particle(
+                self.ps.add_new_dot_trail(
                         coord_xy=(x, y),
                         originating_face=face,
                         start_color=startColor,
@@ -79,7 +79,7 @@ class Pattern(object):
 
     def particle_collision_handler(self, coordinates):
         """Handle a particle collision. coordinate is the x, y, z of the cell where the particles collided"""
-        self.collision_coords.append(coordinates)
+        self.ps.add_collision_particle(coordinates)
 
         # if self.sample_plays < 0:
             # return
@@ -206,7 +206,7 @@ class ParticleSystem(object):
                         # a collision may have happened. We only define a collision as between one or more
                         # trail heads and another particle, so check
 
-                        if any(p.is_head for p in current_bucket):
+                        if any((p.is_solid and p.is_head) for p in current_bucket):
                             # check every pair of particles to see if they collide (based on conditions)
                             for p1, p2 in itertools.combinations(current_bucket, 2):
                                 if p1.collides_with(p2):
@@ -224,7 +224,12 @@ class ParticleSystem(object):
 
         return self.framebuffer
 
-    def add_new_dot_particle(self, coord_xy, originating_face, start_color, end_color):
+    def add_collision_particle(self, coord):
+        particle = FadeParticle(self.cube_size)
+        particle.init(coord, (1.0, 1.0, 1.0), 3, 0.05)
+        self.store_particle(particle)
+
+    def add_new_dot_trail(self, coord_xy, originating_face, start_color, end_color):
         # translate the xy coordinate on the originating face to a cube 3D coordinate
         x, y = coord_xy
         coord = numpy.array(self.translate_to_3d(x, y, originating_face))
@@ -313,10 +318,14 @@ class ParticleSystem(object):
 
 
 class DotParticle(object):
+    """A solid particle that moves in a direction with constant velocity. Can optionally call a callback when colliding with a wall.
+    Can optionally be a "head" particle, which can collide with other "head" particles. """
+
     MAX_PIXEL_COLOR = numpy.array([1.0, 1.0, 1.0])
 
     def __init__(self, cube_size):
         self.cube_size = cube_size
+        self.is_solid = True # this particle CAN be involved in collisions
 
     def init(self, location, velocity, color, is_head):
         self.location = numpy.array(location)
@@ -333,7 +342,7 @@ class DotParticle(object):
 
     def collides_with(self, other_particle):
         """Does the current particle collide with the other particle? This assumes you have ALREADY checked they're in the same location"""
-        return self.is_head and other_particle.is_head and not numpy.array_equal(self.velocity, other_particle.velocity)
+        return other_particle.is_solid and self.is_head and other_particle.is_head and not numpy.array_equal(self.velocity, other_particle.velocity)
 
     def tick(self):
         old_location = numpy.copy(self.location)
@@ -358,6 +367,52 @@ class DotParticle(object):
         if not self.is_out_of_bounds():
             x, y, z = self.location
             framebuffer[x][y][z] = numpy.minimum(numpy.add(framebuffer[x][y][z], self.color), DotParticle.MAX_PIXEL_COLOR)
+
+    def is_out_of_bounds(self):
+        for l in self.location:
+            if l < 0 or l >= self.cube_size:
+                return True
+        
+        return False
+
+class FadeParticle(object):
+    """A static particle that stays a specified colour for a number of ticks, then linearly fades out until it disappears.
+    It's not a solid particle, so nothing can collide with it."""
+
+    MAX_PIXEL_COLOR = numpy.array([1.0, 1.0, 1.0])
+
+    def __init__(self, cube_size):
+        self.cube_size = cube_size
+        self.is_solid = False # this particle cannot be collided with
+
+    def init(self, location, color, sustain_ticks, fade_rate):
+        """Initialise the fading particle. Specify the static location, the colour, the number of ticks
+        to stay bright before fading, and how much brightness should be lost per tick"""
+
+        self.location = numpy.array(location)
+        self.x, self.y, self.z = self.location
+        self.color = numpy.array(color)
+        self.sustain_ticks = sustain_ticks
+        self.fade_rate = fade_rate # 0.0 to 1.0
+        self.current_brightness = 1.0
+        self.dead = False
+
+    def tick(self):
+        if self.sustain_ticks > 0:
+            self.sustain_ticks -= 1
+            return
+
+        self.current_brightness -= self.fade_rate
+
+        if self.current_brightness <= 0:
+            self.dead = True
+
+    def draw(self, framebuffer):
+        color_to_draw = cubehelper.mix_color(0x000000, self.color, self.current_brightness)
+        framebuffer[self.x][self.y][self.z] = numpy.minimum(numpy.add(framebuffer[self.x][self.y][self.z], color_to_draw), FadeParticle.MAX_PIXEL_COLOR)
+
+    def collides_with(self, other_particle):
+        return False # we cannot collide as we aren't solid
 
     def is_out_of_bounds(self):
         for l in self.location:
