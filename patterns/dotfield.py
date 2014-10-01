@@ -6,6 +6,7 @@ import thread
 import time
 import copy
 import numpy
+import random
 import pygame
 import itertools
 from threading import Lock
@@ -24,13 +25,13 @@ class Pattern(object):
 
         pygame.init()
         pygame.mixer.init()
+        pygame.mixer.set_num_channels(24)
 
-        self.sound = pygame.mixer.Sound('patterns/dotfield-data/harp-a.wav')
+        # self.sample_plays = 0.0 # number of sample plays available
+        self.sounds = [pygame.mixer.Sound('patterns/dotfield-data/Glock 32.%02d.wav' % f) for f in range(1, 28)]
 
         self.ps = ParticleSystem(self.cube.size)
         self.ps.set_collision_callback(self.particle_collision_handler)
-
-        self.collision_counter = 0
 
         self.pixels_lock = Lock()
         self.pixels_to_set = []
@@ -43,10 +44,17 @@ class Pattern(object):
         self.ews.attach_handler('activate', self.on_activate)
         self.ews.connect()
 
+        self.collision_coords = []
+
         return 1.0/15
 
     def tick(self):
         self.ps.tick()
+
+        print ' %g' % self.sample_plays
+
+        # if self.sample_plays < 3.0:
+            # self.sample_plays += 0.1
 
         with self.pixels_lock:
             for ((x, y), face, startColor, endColor) in self.pixels_to_set:
@@ -65,11 +73,21 @@ class Pattern(object):
                 for z in xrange(self.cube.size):
                     self.cube.set_pixel((x, y, z), cubehelper.color_to_float(rendered[x][y][z]))
 
-    def particle_collision_handler(self, coordinate):
+        for c in self.collision_coords:
+            self.cube.set_pixel(c, 0xFFFFFF)
+        self.collision_coords = []
+
+    def particle_collision_handler(self, coordinates):
         """Handle a particle collision. coordinate is the x, y, z of the cell where the particles collided"""
-        print "Collision " + str(self.collision_counter)
-        self.collision_counter += 1
-        self.sound.play()
+        self.collision_coords.append(coordinates)
+
+        # if self.sample_plays < 0:
+            # return
+
+        sound = random.choice(self.sounds)
+        sound.set_volume(random.uniform(0.3, 0.7))
+        sound.play()
+        # self.sample_plays -= 1.0
 
     def on_open(self):
         print("Connected to DotField server")
