@@ -315,10 +315,7 @@ class DotParticle(object):
 
     def collides_with(self, other_particle):
         """Does the current particle collide with the other particle? This assumes you have ALREADY checked they're in the same location"""
-        if not self.is_head and not other_particle.is_head:
-            return False
-
-        return not numpy.array_equal(self.velocity, other_particle.velocity)
+        return self.is_head and other_particle.is_head and not numpy.array_equal(self.velocity, other_particle.velocity)
 
     def tick(self):
         old_location = numpy.copy(self.location)
