@@ -51,7 +51,7 @@ class Pattern(object):
     def tick(self):
         self.ps.tick()
 
-        print ' %g' % self.sample_plays
+        # print ' %g' % self.sample_plays
 
         # if self.sample_plays < 3.0:
             # self.sample_plays += 0.1
