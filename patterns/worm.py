@@ -6,8 +6,10 @@ import random
 import cubehelper
 import math
 
+DT = 1.0/20
+SPEED = 10
+MAX_LENGTH = 50
 IQ = 10
-INTERPOLATE = 2
 INITIAL_ENERGY = 1.0
 
 class Pattern(object):
@@ -20,12 +22,12 @@ class Pattern(object):
         self.current_pos = (i, i, i)
         self.forward = 1
         self.blocked = True
-        self.step = 0
+        self.step = 0.0
         if self.cube.size < 8:
             self.decay = 0.1 / INTERPOLATE
         else:
-            self.decay = 0.01 / INTERPOLATE
-        return 0.1 / INTERPOLATE
+            self.decay = INITIAL_ENERGY * DT * SPEED / MAX_LENGTH
+        return DT
 
     def color_for_energy(self, e):
         if self.cube.color:
@@ -50,6 +52,8 @@ class Pattern(object):
 
     def age(self):
         num = len(self.energy)
+        if num == 0:
+            return
         for i in range(0, num):
             e = self.energy[i] - self.decay
             pos = self.body[i]
@@ -66,11 +70,11 @@ class Pattern(object):
             self.body.pop(0)
 
     def tick(self):
-        if self.step > 0:
+        self.step += DT * SPEED
+        if self.step < 1.0:
             self.age()
-            self.step -= 1
             return
-        self.step = INTERPOLATE - 1
+        self.step -= 1.0
         while True:
             if self.blocked or random.randrange(4) != 0:
                 self.heading = random.randrange(3)
@@ -87,4 +91,4 @@ class Pattern(object):
             if self.tries >= IQ:
                 self.age()
                 self.tries = 0
-                return
+                raise StopIteration
