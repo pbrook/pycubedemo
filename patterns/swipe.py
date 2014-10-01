@@ -12,13 +12,6 @@ class Pattern(object):
         return 1.0 / self.cube.size
     def tick(self):
         self.offset += 1
-        if self.offset == self.cube.size:
-            self.color = cubehelper.random_color()
-            self.offset = 1 - self.cube.size
-            self.phase += 1
-            if self.phase == 3:
-                self.phase = 0
-            raise StopIteration
         p0 = self.phase
         p1 = (p0 + 1) % 3
         p2 = (p1 + 1) % 3
@@ -37,3 +30,12 @@ class Pattern(object):
                 for k in range(0, self.cube.size):
                     pos[p2] = k
                     self.cube.set_pixel(pos, color)
+        if self.offset == self.cube.size - 1:
+            self.color = cubehelper.random_color()
+            self.offset = 1 - self.cube.size
+            self.phase += 1
+            if self.phase == 3:
+                self.phase = 0
+            raise StopIteration
+        if self.offset == 0:
+            raise StopIteration
