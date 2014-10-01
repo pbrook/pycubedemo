@@ -26,14 +26,20 @@ class Pattern(object):
     def init(self):
         self.double_buffer = True
         self.bits = None
-        self.launch()
+        self.relaunch = True
         return DT
     def tick(self):
         self.cube.clear()
         if self.bits is not None:
             self.descend()
+        if self.relaunch:
+            self.launch()
         if self.rocket is not None:
             self.climb()
+        if self.relaunch:
+            self.relaunch = False
+            raise StopIteration
+
     def plot(self, voxel, color):
         sz = self.cube.size
         pos = voxel.pos
@@ -73,7 +79,7 @@ class Pattern(object):
             self.plot(bit, color)
         self.fade -= FADE * DT
         if self.fade < 0.5 and self.rocket is None:
-            self.launch()
+            self.relaunch = True
         if self.fade <= 0:
             self.bits = None
     def launch(self):
