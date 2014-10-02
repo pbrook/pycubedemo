@@ -23,6 +23,9 @@ class Pattern(object):
 
         self.MAX_PIXEL_COLOR = [255, 255, 255]
 
+        # Should white fading particles be shown at collision points?
+        self.COLLISION_PARTICLES_ENABLED = True
+
         pygame.init()
         pygame.mixer.init()
         pygame.mixer.set_num_channels(24)
@@ -87,7 +90,8 @@ class Pattern(object):
 
     def particle_collision_handler(self, coordinates):
         """Handle a particle collision. coordinate is the x, y, z of the cell where the particles collided"""
-        self.ps.add_collision_particle(coordinates)
+        if self.COLLISION_PARTICLES_ENABLED:
+            self.ps.add_collision_particle(coordinates)
 
         # if self.sample_plays < 0:
             # return
