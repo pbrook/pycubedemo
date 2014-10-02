@@ -35,6 +35,7 @@ class Pattern(object):
 
         self.pixels_lock = Lock()
         self.pixels_to_set = []
+        self.nyans_to_create = []
 
         self.colors = [] # set when the welcome message is received
 
@@ -42,6 +43,7 @@ class Pattern(object):
         self.ews.attach_handler('open', self.on_open)
         self.ews.attach_handler('welcome', self.on_welcome)
         self.ews.attach_handler('activate', self.on_activate)
+        self.ews.attach_handler('nyan', self.on_nyan)
         self.ews.connect()
 
         self.collision_coords = []
@@ -64,7 +66,13 @@ class Pattern(object):
                         start_color=startColor,
                         end_color=endColor)
 
+            for ((x, y), face) in self.nyans_to_create:
+                self.ps.add_nyan_trail(
+                    coord_xy=(x, y),
+                    originating_face=face)
+
             self.pixels_to_set = []
+            self.nyans_to_create = []
 
         rendered = self.ps.render()
 
@@ -107,6 +115,11 @@ class Pattern(object):
             endColor = self.colors[data["endColorIndex"]]
             translated_coords = self.translate_coords(data["coords"]["x"], data["coords"]["y"])
             self.pixels_to_set.append((translated_coords, data["face"], startColor, endColor))
+
+    def on_nyan(self, data):
+        with self.pixels_lock:
+            translated_coords = self.translate_coords(data["coords"]["x"], data["coords"]["y"])
+            self.nyans_to_create.append((translated_coords, data["face"]))
 
     def translate_coords(self, x, y):
         """ Translate finger-coordinates (i.e. top left is 0, 0, bottom left is 0, 7) to plane coords (i.e. top left
@@ -172,6 +185,21 @@ class ParticleSystem(object):
         self.particles = numpy.empty([cube_size, cube_size, cube_size], dtype=object)
         self.oob_particles = []
 
+        # rainbow colours
+        self.nyan_colors = [
+            0xFF0000,
+            0xFF6200,
+            0xFFB700,
+            0xEEFF00,
+            0x80FF00,
+            0x00FF0D,
+            0x00FFE6,
+            0x009DFF,
+            0x0015FF,
+            0x9500FF,
+            0xE100FF
+        ]
+
         self.clear_particles()
 
         # Unit vectors for particle movement AWAY from the named face of the cube
@@ -228,6 +256,17 @@ class ParticleSystem(object):
         particle = FadeParticle(self.cube_size)
         particle.init(coord, (1.0, 1.0, 1.0), 3, 0.05)
         self.store_particle(particle)
+
+    def add_nyan_trail(self, coord_xy, originating_face):
+        x, y = coord_xy
+        coord = numpy.array(self.translate_to_3d(x, y, originating_face))
+
+        inverse_direction = self.directions[originating_face] * -1
+
+        for idx, col in enumerate(self.nyan_colors):
+            particle = DotParticle(self.cube_size)
+            particle.init(coord + inverse_direction*(idx+1), self.directions[originating_face], cubehelper.color_to_float(col), False)
+            self.store_particle(particle)
 
     def add_new_dot_trail(self, coord_xy, originating_face, start_color, end_color):
         # translate the xy coordinate on the originating face to a cube 3D coordinate
