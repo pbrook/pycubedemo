@@ -124,8 +124,11 @@ ap.add_argument('-f', '--frames', action='store_true', default=False,
         help="Display framerate")
 ap.add_argument('-n', '--noloop', action='store_true', default=False,
 	help="Run selected pattern(s) only once, don't loop through them")
+ap.add_argument('-S', '--scale', type=int, default=1,
+	        help="Supersampling factor for full-scene antialiasing")
+ap.add_argument('-g', '--gamma', type=float, default=2.0,
+	        help="Gamma of output device (for supersampling)")
 args = ap.parse_args()
-
 debug_frames = args.frames
 if args.port is None:
     import glcube
@@ -133,6 +136,11 @@ if args.port is None:
 else:
     import serialcube
     c = serialcube.Cube(args)
+
+if args.scale != 1:
+    args.realcube = c
+    import scaledcube
+    c = scaledcube.Cube(args)
 
 if c.color:
     c.plasma = cubehelper.color_plasma
