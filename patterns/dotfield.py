@@ -240,9 +240,12 @@ class ParticleSystem(object):
                             # trail heads and another particle, so check
 
                             # check every pair of particles to see if they collide (based on conditions)
+                            # Note: potential optimisation here, by linearly iterating through particles instead of combinations.
+                            # The tradeoff would be that we can't have the collides_with method
                             for p1, p2 in itertools.combinations(current_bucket, 2):
                                 if p1.collides_with(p2):
                                     self.collision_callback((x, y, z))
+                                    break
 
     def set_collision_callback(self, callback):
         self.collision_callback = callback
@@ -332,7 +335,7 @@ class ParticleSystem(object):
 
     def store_particle(self, particle):
         """Insert the specified particle into a bucket corresponding to its location"""
-        if not particle.is_solid or particle.is_out_of_bounds():
+        if not particle.is_solid or particle.is_out_of_bounds:
             self.squidgy_particles.append(particle)
             return
 
@@ -375,7 +378,8 @@ class DotParticle(object):
         self.color = numpy.array(color) # array RGB float colours (0-1)
         self.is_solid = is_head
         self.dead = False # set to true when the particle goes outside the bounds of the cube
-        self.immune = self.is_out_of_bounds() # immune from dying. Used when spawning a particle outside the bounds of the cube
+        self.is_out_of_bounds = self._calc_out_of_bounds()
+        self.immune = self.is_out_of_bounds # immune from dying. Used when spawning a particle outside the bounds of the cube
         self.wall_collision_callback = None
 
     def set_wall_collision_callback(self, callback):
@@ -390,7 +394,9 @@ class DotParticle(object):
         old_location = numpy.copy(self.location)
         self.location += self.velocity
 
-        oob = self.is_out_of_bounds()
+        self.is_out_of_bounds = self._calc_out_of_bounds()
+
+        oob = self.is_out_of_bounds
         if oob and not self.immune:
             self.dead = True
         elif not oob:
@@ -406,12 +412,11 @@ class DotParticle(object):
 
     def draw(self, framebuffer):
         """Draw this particle onto the passed-in framebuffer"""
-        if not self.is_out_of_bounds():
+        if not self.is_out_of_bounds:
             x, y, z = self.location
             framebuffer[x][y][z] = numpy.minimum(numpy.add(framebuffer[x][y][z], self.color), DotParticle.MAX_PIXEL_COLOR)
 
-    def is_out_of_bounds(self):
-        # TODO: cache per tick
+    def _calc_out_of_bounds(self):
         for l in self.location:
             if l < 0 or l >= self.cube_size:
                 return True
@@ -439,8 +444,10 @@ class FadeParticle(object):
         self.fade_rate = fade_rate # 0.0 to 1.0
         self.current_brightness = 1.0
         self.dead = False
+        self.is_out_of_bounds = self._calc_out_of_bounds()
 
     def tick(self):
+        self.is_out_of_bounds = self._calc_out_of_bounds()
         if self.sustain_ticks > 0:
             self.sustain_ticks -= 1
             return
@@ -457,7 +464,7 @@ class FadeParticle(object):
     def collides_with(self, other_particle):
         return False # we cannot collide as we aren't solid
 
-    def is_out_of_bounds(self):
+    def _calc_out_of_bounds(self):
         for l in self.location:
             if l < 0 or l >= self.cube_size:
                 return True
