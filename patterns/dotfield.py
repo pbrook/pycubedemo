@@ -186,8 +186,8 @@ class ParticleSystem(object):
         self.cube_size = cube_size
         self.framebuffer = numpy.zeros([cube_size, cube_size, cube_size, 3], dtype=int)
 
-        self.particles = numpy.empty([cube_size, cube_size, cube_size], dtype=object)
-        self.oob_particles = []
+        self.solid_particles = numpy.empty([cube_size, cube_size, cube_size], dtype=object)
+        self.squidgy_particles = [] # non-solid particles
 
         # rainbow colours
         self.nyan_colors = [
@@ -228,17 +228,17 @@ class ParticleSystem(object):
         for particle in ticked_particles:
             self.store_particle(particle)
 
-        # get rid of dead particles and check for collisions
-        for x in xrange(self.cube_size):
-            for y in xrange(self.cube_size):
-                for z in xrange(self.cube_size):
-                    current_bucket = self.particles[x][y][z]
+        # get rid of dead particles and check solid particles for collisions
+        if self.collision_callback:
+            for x in xrange(self.cube_size):
+                for y in xrange(self.cube_size):
+                    for z in xrange(self.cube_size):
+                        current_bucket = self.solid_particles[x][y][z]
 
-                    if self.collision_callback and len(current_bucket) > 1:
-                        # a collision may have happened. We only define a collision as between one or more
-                        # trail heads and another particle, so check
+                        if len(current_bucket) > 1:
+                            # a collision may have happened. We only define a collision as between one or more
+                            # trail heads and another particle, so check
 
-                        if any((p.is_solid and p.is_head) for p in current_bucket):
                             # check every pair of particles to see if they collide (based on conditions)
                             for p1, p2 in itertools.combinations(current_bucket, 2):
                                 if p1.collides_with(p2):
@@ -315,29 +315,29 @@ class ParticleSystem(object):
         for x in xrange(self.cube_size):
             for y in xrange(self.cube_size):
                 for z in xrange(self.cube_size):
-                    self.particles[x][y][z] = []
+                    self.solid_particles[x][y][z] = []
 
-        self.oob_particles[:] = [] # out-of-bounds particles (particles outside the cube)
+        self.squidgy_particles[:] = [] # out-of-bounds particles (particles outside the cube) and non-solid particles
 
     def get_particles(self):
         """Generator to iterate over all stored particles"""
         for x in xrange(self.cube_size):
             for y in xrange(self.cube_size):
                 for z in xrange(self.cube_size):
-                    for p in self.particles[x][y][z]:
+                    for p in self.solid_particles[x][y][z]:
                         yield p
 
-        for particle in self.oob_particles:
+        for particle in self.squidgy_particles:
             yield particle
 
     def store_particle(self, particle):
         """Insert the specified particle into a bucket corresponding to its location"""
-        if particle.is_out_of_bounds():
-            self.oob_particles.append(particle)
+        if not particle.is_solid or particle.is_out_of_bounds():
+            self.squidgy_particles.append(particle)
             return
 
         x, y, z = particle.location
-        self.particles[x][y][z].append(particle)
+        self.solid_particles[x][y][z].append(particle)
 
     def dot_wall_collide(self, coordinate):
         print "Wall collision"
@@ -368,13 +368,12 @@ class DotParticle(object):
 
     def __init__(self, cube_size):
         self.cube_size = cube_size
-        self.is_solid = True # this particle CAN be involved in collisions
 
     def init(self, location, velocity, color, is_head):
         self.location = numpy.array(location)
         self.velocity = numpy.array(velocity)
         self.color = numpy.array(color) # array RGB float colours (0-1)
-        self.is_head = is_head # is this particle the head of the trail?
+        self.is_solid = is_head
         self.dead = False # set to true when the particle goes outside the bounds of the cube
         self.immune = self.is_out_of_bounds() # immune from dying. Used when spawning a particle outside the bounds of the cube
         self.wall_collision_callback = None
@@ -385,7 +384,7 @@ class DotParticle(object):
 
     def collides_with(self, other_particle):
         """Does the current particle collide with the other particle? This assumes you have ALREADY checked they're in the same location"""
-        return other_particle.is_solid and self.is_head and other_particle.is_head and not numpy.array_equal(self.velocity, other_particle.velocity)
+        return not numpy.array_equal(self.velocity, other_particle.velocity)
 
     def tick(self):
         old_location = numpy.copy(self.location)
@@ -412,6 +411,7 @@ class DotParticle(object):
             framebuffer[x][y][z] = numpy.minimum(numpy.add(framebuffer[x][y][z], self.color), DotParticle.MAX_PIXEL_COLOR)
 
     def is_out_of_bounds(self):
+        # TODO: cache per tick
         for l in self.location:
             if l < 0 or l >= self.cube_size:
                 return True
