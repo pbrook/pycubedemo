@@ -27,27 +27,32 @@ class Pattern(object):
         cs = self.cube.size-1
 
         self.corners = [
-            [(0, 0, 0), (1, 1, 1)],       # 0
-            [(0, 0, cs), (1, 1, -1)],     # 1
-            [(0, cs, 0), (1, -1, 1)],     # 2
-            [(0, cs, cs), (1, -1, -1)],   # 3
-            [(cs, 0, 0), (-1, 1, 1)],     # 4
-            [(cs, 0, cs), (-1, 1, -1)],   # 5
-            [(cs, cs, 0), (-1, -1, 1)],   # 6
-            [(cs, cs, cs), (-1, -1, -1)], # 7
+            (0, 0, 0),     # 0
+            (0, 0, cs),    # 1
+            (0, cs, 0),    # 2
+            (0, cs, cs),   # 3
+            (cs, 0, 0),    # 4
+            (cs, 0, cs),   # 5
+            (cs, cs, 0),   # 6
+            (cs, cs, cs),  # 7
         ]
 
         self.filling_color = 0
+        self.corner_index = None
         self.restart()
         return 0.6 / self.cube.size
 
     def restart(self):
         self.offset = 0
-        self.corner = self.corners[random.randrange(0, 8)]
+        new_corner_index = self.corner_index
+        while self.corner_index == new_corner_index:
+            new_corner_index = random.randrange(0, 8)
+        self.corner_index = new_corner_index
+        self.corner = self.corners[self.corner_index]
         self.filling_color = cubehelper.random_color(self.filling_color)
 
     def tick(self):
-        pos = self.corner[0]
+        pos = self.corner
         outer = self.offset
         inner = self.offset - 4
 
@@ -56,7 +61,7 @@ class Pattern(object):
             for x in range(self.cube.size):
                 dx = abs(x - pos[0])
                 for z in range(self.cube.size):
-                    dz = abs(z - pos[0])
+                    dz = abs(z - pos[2])
                     if max(dx, dy, dz) >= inner and max(dx, dy, dz) <= outer:
                         color = self.filling_color
                     else:
