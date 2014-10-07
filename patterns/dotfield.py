@@ -97,7 +97,7 @@ class Pattern(object):
             # return
 
         sound = random.choice(self.sounds)
-        sound.set_volume(random.uniform(0.3, 0.7))
+        sound.set_volume(random.uniform(0.65, 0.85))
         sound.play()
         # self.sample_plays -= 1.0
 
