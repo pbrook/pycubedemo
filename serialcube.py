@@ -15,7 +15,7 @@ class TCPWriter(object):
         if host == "":
             host = "localhost"
         self.sock = socket.create_connection((host, int(port)))
-        self.sock.recv(4)
+        #self.sock.recv(4)
     def write(self, b):
         self.sock.sendall(b)
 

@@ -24,7 +24,7 @@ class Pattern(object):
         self.blocked = True
         self.step = 0.0
         if self.cube.size < 8:
-            self.decay = 0.1 / INTERPOLATE
+            self.decay = INITIAL_ENERGY * DT * SPEED / MAX_LENGTH
         else:
             self.decay = INITIAL_ENERGY * DT * SPEED / MAX_LENGTH
         return DT
