@@ -172,6 +172,15 @@ class Cube(object):
             self.select_board(board)
         self.do_cmd(offset, r, g, b)
 
+    # This doesn't do anything smart if the same pixel is specified multiple
+    # times
+    def set_pixels(self, pixels):
+        # Potential optimisation: sort the pixels by y
+        # (minimises board switches)
+        for pixel in pixels:
+            (xyz, rgb) = pixel
+            self.set_pixel(xyz, rgb)
+
     def render(self):
         self.bus_reset()
         self._flush_data()
