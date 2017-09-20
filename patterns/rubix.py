@@ -8,6 +8,165 @@ import numpy
 from copy import deepcopy
 
 class Pattern(object):
+    def rotateFrontFace(self):
+        leftFaceTemp = deepcopy(self.leftFace)
+        topFaceTemp = deepcopy(self.topFace)
+        bottomFaceTemp = deepcopy(self.bottomFace)
+        rightFaceTemp = deepcopy(self.rightFace)
+        frontFaceTemp = deepcopy(self.frontFace)
+        backFaceTemp = deepcopy(self.backFace)
+
+        self.rotateFace(self.frontFace, frontFaceTemp)
+
+        for a in range(3):
+            self.leftFace[0][a] = bottomFaceTemp[0][a]
+            self.bottomFace[0][a] = rightFaceTemp[0][2-a]
+            self.rightFace[0][a] = topFaceTemp[0][a]
+            self.topFace[0][a] = leftFaceTemp[0][2-a]
+
+        self.setCube();
+
+    def rotateBackFace(self):
+        leftFaceTemp = deepcopy(self.leftFace)
+        topFaceTemp = deepcopy(self.topFace)
+        bottomFaceTemp = deepcopy(self.bottomFace)
+        rightFaceTemp = deepcopy(self.rightFace)
+        frontFaceTemp = deepcopy(self.frontFace)
+        backFaceTemp = deepcopy(self.backFace)
+
+        self.rotateFace(self.backFace, backFaceTemp)
+
+        for a in range(3):
+            self.leftFace[2][a] = bottomFaceTemp[2][a]
+            self.bottomFace[2][a] = rightFaceTemp[2][2-a]
+            self.rightFace[2][a] = topFaceTemp[2][a]
+            self.topFace[2][a] = leftFaceTemp[2][2-a]
+
+        self.setCube();
+
+    def rotateLeftFace(self):
+        leftFaceTemp = deepcopy(self.leftFace)
+        topFaceTemp = deepcopy(self.topFace)
+        bottomFaceTemp = deepcopy(self.bottomFace)
+        rightFaceTemp = deepcopy(self.rightFace)
+        frontFaceTemp = deepcopy(self.frontFace)
+        backFaceTemp = deepcopy(self.backFace)
+
+        self.rotateFace(self.leftFace, leftFaceTemp)
+
+        for a in range(3):
+            self.backFace[2][a] = bottomFaceTemp[a][2]
+            self.bottomFace[a][2] = frontFaceTemp[2][2-a]
+            self.frontFace[2][a] = topFaceTemp[a][2]
+            self.topFace[a][2] = backFaceTemp[2][2-a]
+
+        self.setCube();
+
+    def rotateRightFace(self):
+        leftFaceTemp = deepcopy(self.leftFace)
+        topFaceTemp = deepcopy(self.topFace)
+        bottomFaceTemp = deepcopy(self.bottomFace)
+        rightFaceTemp = deepcopy(self.rightFace)
+        frontFaceTemp = deepcopy(self.frontFace)
+        backFaceTemp = deepcopy(self.backFace)
+
+        self.rotateFace(self.rightFace, rightFaceTemp)
+
+        for a in range(3):
+            self.backFace[0][a] = bottomFaceTemp[a][0]
+            self.bottomFace[a][0] = frontFaceTemp[0][2-a]
+            self.frontFace[0][a] = topFaceTemp[a][0]
+            self.topFace[a][0] = backFaceTemp[0][2-a]
+
+        self.setCube();
+
+    def rotateTopFace(self):
+        leftFaceTemp = deepcopy(self.leftFace)
+        topFaceTemp = deepcopy(self.topFace)
+        bottomFaceTemp = deepcopy(self.bottomFace)
+        rightFaceTemp = deepcopy(self.rightFace)
+        frontFaceTemp = deepcopy(self.frontFace)
+        backFaceTemp = deepcopy(self.backFace)
+
+        self.rotateFace(self.topFace, topFaceTemp)
+
+        for a in range(3):
+            self.backFace[a][2] = rightFaceTemp[a][2]
+            self.rightFace[a][2] = frontFaceTemp[2-a][2]
+            self.frontFace[a][2] = leftFaceTemp[a][2]
+            self.leftFace[a][2] = backFaceTemp[2-a][2]
+
+        self.setCube();
+
+    def rotateBottomFace(self):
+        leftFaceTemp = deepcopy(self.leftFace)
+        topFaceTemp = deepcopy(self.topFace)
+        bottomFaceTemp = deepcopy(self.bottomFace)
+        rightFaceTemp = deepcopy(self.rightFace)
+        frontFaceTemp = deepcopy(self.frontFace)
+        backFaceTemp = deepcopy(self.backFace)
+
+        self.rotateFace(self.bottomFace, bottomFaceTemp)
+
+        for a in range(3):
+            self.backFace[a][0] = rightFaceTemp[a][0]
+            self.rightFace[a][0] = frontFaceTemp[2-a][0]
+            self.frontFace[a][0] = leftFaceTemp[a][0]
+            self.leftFace[a][0] = backFaceTemp[2-a][0]
+
+        self.setCube();
+
+    def makeMove(self, move):
+        if move == 0:
+            self.rotateTopFace()
+        elif move == 1:
+            self.rotateTopFace()
+            self.rotateTopFace()
+            self.rotateTopFace()
+        elif move == 2:
+            self.rotateBottomFace()
+        elif move == 3:
+            self.rotateBottomFace()
+            self.rotateBottomFace()
+            self.rotateBottomFace()
+        elif move == 4:
+            self.rotateLeftFace()
+        elif move == 5:
+            self.rotateLeftFace()
+            self.rotateLeftFace()
+            self.rotateLeftFace()
+        elif move == 6:
+            self.rotateRightFace()
+        elif move == 7:
+            self.rotateRightFace()
+            self.rotateRightFace()
+            self.rotateRightFace()
+        elif move == 8:
+            self.rotateFrontFace()
+        elif move == 9:
+            self.rotateFrontFace()
+            self.rotateFrontFace()
+            self.rotateFrontFace()
+        elif move == 10:
+            self.rotateBackFace()
+        elif move == 11:
+            self.rotateBackFace()
+            self.rotateBackFace()
+            self.rotateBackFace()
+
+    def rotateFace(self, face, faceTemp):
+        face[0][0] = faceTemp[0][2]
+        face[0][1] = faceTemp[1][2]
+
+        face[0][2] = faceTemp[2][2]
+        face[1][2] = faceTemp[2][1]
+
+        face[2][2] = faceTemp[2][0]
+        face[2][1] = faceTemp[1][0]
+
+        face[2][0] = faceTemp[0][0]
+        face[1][0] = faceTemp[0][1]
+
     def init(self):
         self.double_buffer = True
 
@@ -55,42 +214,7 @@ class Pattern(object):
             else:
                 move -= 1
 
-            if move == 0:
-                self.rotateTopFace()
-            elif move == 1:
-                self.rotateTopFace()
-                self.rotateTopFace()
-                self.rotateTopFace()
-            elif move == 2:
-                self.rotateBottomFace()
-            elif move == 3:
-                self.rotateBottomFace()
-                self.rotateBottomFace()
-                self.rotateBottomFace()
-            elif move == 4:
-                self.rotateLeftFace()
-            elif move == 5:
-                self.rotateLeftFace()
-                self.rotateLeftFace()
-                self.rotateLeftFace()
-            elif move == 6:
-                self.rotateRightFace()
-            elif move == 7:
-                self.rotateRightFace()
-                self.rotateRightFace()
-                self.rotateRightFace()
-            elif move == 8:
-                self.rotateFrontFace()
-            elif move == 9:
-                self.rotateFrontFace()
-                self.rotateFrontFace()
-                self.rotateFrontFace()
-            elif move == 10:
-                self.rotateBackFace()
-            elif move == 11:
-                self.rotateBackFace()
-                self.rotateBackFace()
-                self.rotateBackFace()
+            self.makeMove(move)
 
         return 1.0 / 5
 
@@ -127,175 +251,6 @@ class Pattern(object):
                 self.myCube[7][2 + (a*2)][1 + (b*2)] = self.backFace[a][b]
                 self.myCube[7][2 + (a*2)][2 + (b*2)] = self.backFace[a][b]
 
-
-    def rotateFrontFace(self):
-        leftFaceTemp = deepcopy(self.leftFace)
-        topFaceTemp = deepcopy(self.topFace)
-        bottomFaceTemp = deepcopy(self.bottomFace)
-        rightFaceTemp = deepcopy(self.rightFace)
-        frontFaceTemp = deepcopy(self.frontFace)
-        backFaceTemp = deepcopy(self.backFace)
-
-        self.frontFace[0][0] = frontFaceTemp[0][2]
-        self.frontFace[0][1] = frontFaceTemp[1][2]
-
-        self.frontFace[0][2] = frontFaceTemp[2][2]
-        self.frontFace[1][2] = frontFaceTemp[2][1]
-
-        self.frontFace[2][2] = frontFaceTemp[2][0]
-        self.frontFace[2][1] = frontFaceTemp[1][0]
-
-        self.frontFace[2][0] = frontFaceTemp[0][0]
-        self.frontFace[1][0] = frontFaceTemp[0][1]
-
-        for a in range(3):
-            self.leftFace[0][a] = bottomFaceTemp[0][a]
-            self.bottomFace[0][a] = rightFaceTemp[0][2-a]
-            self.rightFace[0][a] = topFaceTemp[0][a]
-            self.topFace[0][a] = leftFaceTemp[0][2-a]
-
-        self.setCube();
-
-    def rotateBackFace(self):
-        leftFaceTemp = deepcopy(self.leftFace)
-        topFaceTemp = deepcopy(self.topFace)
-        bottomFaceTemp = deepcopy(self.bottomFace)
-        rightFaceTemp = deepcopy(self.rightFace)
-        frontFaceTemp = deepcopy(self.frontFace)
-        backFaceTemp = deepcopy(self.backFace)
-
-        self.backFace[0][0] = backFaceTemp[0][2]
-        self.backFace[0][1] = backFaceTemp[1][2]
-
-        self.backFace[0][2] = backFaceTemp[2][2]
-        self.backFace[1][2] = backFaceTemp[2][1]
-
-        self.backFace[2][2] = backFaceTemp[2][0]
-        self.backFace[2][1] = backFaceTemp[1][0]
-
-        self.backFace[2][0] = backFaceTemp[0][0]
-        self.backFace[1][0] = backFaceTemp[0][1]
-
-        for a in range(3):
-            self.leftFace[2][a] = bottomFaceTemp[2][a]
-            self.bottomFace[2][a] = rightFaceTemp[2][2-a]
-            self.rightFace[2][a] = topFaceTemp[2][a]
-            self.topFace[2][a] = leftFaceTemp[2][2-a]
-
-        self.setCube();
-
-    def rotateLeftFace(self):
-        leftFaceTemp = deepcopy(self.leftFace)
-        topFaceTemp = deepcopy(self.topFace)
-        bottomFaceTemp = deepcopy(self.bottomFace)
-        rightFaceTemp = deepcopy(self.rightFace)
-        frontFaceTemp = deepcopy(self.frontFace)
-        backFaceTemp = deepcopy(self.backFace)
-
-        self.leftFace[0][0] = leftFaceTemp[0][2]
-        self.leftFace[0][1] = leftFaceTemp[1][2]
-
-        self.leftFace[0][2] = leftFaceTemp[2][2]
-        self.leftFace[1][2] = leftFaceTemp[2][1]
-
-        self.leftFace[2][2] = leftFaceTemp[2][0]
-        self.leftFace[2][1] = leftFaceTemp[1][0]
-
-        self.leftFace[2][0] = leftFaceTemp[0][0]
-        self.leftFace[1][0] = leftFaceTemp[0][1]
-
-        for a in range(3):
-            self.backFace[2][a] = bottomFaceTemp[a][2]
-            self.bottomFace[a][2] = frontFaceTemp[2][2-a]
-            self.frontFace[2][a] = topFaceTemp[a][2]
-            self.topFace[a][2] = backFaceTemp[2][2-a]
-
-        self.setCube();
-
-    def rotateRightFace(self):
-        leftFaceTemp = deepcopy(self.leftFace)
-        topFaceTemp = deepcopy(self.topFace)
-        bottomFaceTemp = deepcopy(self.bottomFace)
-        rightFaceTemp = deepcopy(self.rightFace)
-        frontFaceTemp = deepcopy(self.frontFace)
-        backFaceTemp = deepcopy(self.backFace)
-
-        self.rightFace[0][0] = rightFaceTemp[0][2]
-        self.rightFace[0][1] = rightFaceTemp[1][2]
-
-        self.rightFace[0][2] = rightFaceTemp[2][2]
-        self.rightFace[1][2] = rightFaceTemp[2][1]
-
-        self.rightFace[2][2] = rightFaceTemp[2][0]
-        self.rightFace[2][1] = rightFaceTemp[1][0]
-
-        self.rightFace[2][0] = rightFaceTemp[0][0]
-        self.rightFace[1][0] = rightFaceTemp[0][1]
-
-        for a in range(3):
-            self.backFace[0][a] = bottomFaceTemp[a][0]
-            self.bottomFace[a][0] = frontFaceTemp[0][2-a]
-            self.frontFace[0][a] = topFaceTemp[a][0]
-            self.topFace[a][0] = backFaceTemp[0][2-a]
-
-        self.setCube();
-
-    def rotateTopFace(self):
-        leftFaceTemp = deepcopy(self.leftFace)
-        topFaceTemp = deepcopy(self.topFace)
-        bottomFaceTemp = deepcopy(self.bottomFace)
-        rightFaceTemp = deepcopy(self.rightFace)
-        frontFaceTemp = deepcopy(self.frontFace)
-        backFaceTemp = deepcopy(self.backFace)
-
-        self.topFace[0][0] = topFaceTemp[0][2]
-        self.topFace[0][1] = topFaceTemp[1][2]
-
-        self.topFace[0][2] = topFaceTemp[2][2]
-        self.topFace[1][2] = topFaceTemp[2][1]
-
-        self.topFace[2][2] = topFaceTemp[2][0]
-        self.topFace[2][1] = topFaceTemp[1][0]
-
-        self.topFace[2][0] = topFaceTemp[0][0]
-        self.topFace[1][0] = topFaceTemp[0][1]
-
-        for a in range(3):
-            self.backFace[a][2] = rightFaceTemp[a][2]
-            self.rightFace[a][2] = frontFaceTemp[2-a][2]
-            self.frontFace[a][2] = leftFaceTemp[a][2]
-            self.leftFace[a][2] = backFaceTemp[2-a][2]
-
-        self.setCube();
-
-    def rotateBottomFace(self):
-        leftFaceTemp = deepcopy(self.leftFace)
-        topFaceTemp = deepcopy(self.topFace)
-        bottomFaceTemp = deepcopy(self.bottomFace)
-        rightFaceTemp = deepcopy(self.rightFace)
-        frontFaceTemp = deepcopy(self.frontFace)
-        backFaceTemp = deepcopy(self.backFace)
-
-        self.bottomFace[0][0] = bottomFaceTemp[0][2]
-        self.bottomFace[0][1] = bottomFaceTemp[1][2]
-
-        self.bottomFace[0][2] = bottomFaceTemp[2][2]
-        self.bottomFace[1][2] = bottomFaceTemp[2][1]
-
-        self.bottomFace[2][2] = bottomFaceTemp[2][0]
-        self.bottomFace[2][1] = bottomFaceTemp[1][0]
-
-        self.bottomFace[2][0] = bottomFaceTemp[0][0]
-        self.bottomFace[1][0] = bottomFaceTemp[0][1]
-
-        for a in range(3):
-            self.backFace[a][0] = rightFaceTemp[a][0]
-            self.rightFace[a][0] = frontFaceTemp[2-a][0]
-            self.frontFace[a][0] = leftFaceTemp[a][0]
-            self.leftFace[a][0] = backFaceTemp[2-a][0]
-
-        self.setCube();
-
     def tick(self):
         self.cube.clear()
 
@@ -304,42 +259,7 @@ class Pattern(object):
         if self.time < self.numMoves:
             move = self.moves[self.time]
 
-            if move == 0:
-                self.rotateTopFace()
-            elif move == 1:
-                self.rotateTopFace()
-                self.rotateTopFace()
-                self.rotateTopFace()
-            elif move == 2:
-                self.rotateBottomFace()
-            elif move == 3:
-                self.rotateBottomFace()
-                self.rotateBottomFace()
-                self.rotateBottomFace()
-            elif move == 4:
-                self.rotateLeftFace()
-            elif move == 5:
-                self.rotateLeftFace()
-                self.rotateLeftFace()
-                self.rotateLeftFace()
-            elif move == 6:
-                self.rotateRightFace()
-            elif move == 7:
-                self.rotateRightFace()
-                self.rotateRightFace()
-                self.rotateRightFace()
-            elif move == 8:
-                self.rotateFrontFace()
-            elif move == 9:
-                self.rotateFrontFace()
-                self.rotateFrontFace()
-                self.rotateFrontFace()
-            elif move == 10:
-                self.rotateBackFace()
-            elif move == 11:
-                self.rotateBackFace()
-                self.rotateBackFace()
-                self.rotateBackFace()
+            self.makeMove(move)
 
         for a in range(8):
             for b in range(8):
