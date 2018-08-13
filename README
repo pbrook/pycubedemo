@@ -6,7 +6,7 @@ Requires numpy (python-numpy pakcage on Debian-like systems).
 
 The OpenGL renderer requires pygame and pyOpenGL (python-pygame/python-opengl)
 
-The default target is the the OpenGL renderer, and will cycle through all patterns in a random order.
+The default target is the OpenGL renderer, and will cycle through all patterns in a random order.
 You can connect to to an external cube/simulator with --port hostname:portnum
 
 A particular [set of] pattern(s) can be selected with the --pattern commandline option.
