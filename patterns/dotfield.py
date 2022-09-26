@@ -2,7 +2,7 @@ from __future__ import with_statement
 import cubehelper
 import websocket
 import json
-import thread
+import threading
 import time
 import copy
 import numpy
@@ -79,9 +79,9 @@ class Pattern(object):
 
         rendered = self.ps.render()
 
-        for y in xrange(self.cube.size):
-            for x in xrange(self.cube.size):
-                for z in xrange(self.cube.size):
+        for y in range(self.cube.size):
+            for x in range(self.cube.size):
+                for z in range(self.cube.size):
                     self.cube.set_pixel((x, y, z), cubehelper.color_to_float(rendered[x][y][z]))
 
         for c in self.collision_coords:
@@ -141,7 +141,7 @@ class EventedWebsocket(object):
                             on_error = self.on_error,
                             on_open = self.on_open,
                             on_close = self.on_close)
-        thread.start_new_thread(self.ws.run_forever, ())
+        threading.Thread(target=self.ws.run_forever, args=()).start()
 
     def emit(self, event, data=None):
         if data == None:
@@ -230,9 +230,9 @@ class ParticleSystem(object):
 
         # get rid of dead particles and check solid particles for collisions
         if self.collision_callback:
-            for x in xrange(self.cube_size):
-                for y in xrange(self.cube_size):
-                    for z in xrange(self.cube_size):
+            for x in range(self.cube_size):
+                for y in range(self.cube_size):
+                    for z in range(self.cube_size):
                         current_bucket = self.solid_particles[x][y][z]
 
                         if len(current_bucket) > 1:
@@ -315,18 +315,18 @@ class ParticleSystem(object):
         self.store_particle(particle_trail4)
 
     def clear_particles(self):
-        for x in xrange(self.cube_size):
-            for y in xrange(self.cube_size):
-                for z in xrange(self.cube_size):
+        for x in range(self.cube_size):
+            for y in range(self.cube_size):
+                for z in range(self.cube_size):
                     self.solid_particles[x][y][z] = []
 
         self.squidgy_particles[:] = [] # out-of-bounds particles (particles outside the cube) and non-solid particles
 
     def get_particles(self):
         """Generator to iterate over all stored particles"""
-        for x in xrange(self.cube_size):
-            for y in xrange(self.cube_size):
-                for z in xrange(self.cube_size):
+        for x in range(self.cube_size):
+            for y in range(self.cube_size):
+                for z in range(self.cube_size):
                     for p in self.solid_particles[x][y][z]:
                         yield p
 
@@ -343,7 +343,7 @@ class ParticleSystem(object):
         self.solid_particles[x][y][z].append(particle)
 
     def dot_wall_collide(self, coordinate):
-        print "Wall collision"
+        print("Wall collision")
 
     def translate_to_3d(self, x, y, face):
         """Translate a coordinate specified in 2D on a cube face to 3D cube coordinates"""
